@@ -1,0 +1,47 @@
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vida
+          POSTGRES_PASSWORD: vida
+          POSTGRES_DB: vida
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vida"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://vida:vida@localhost:5432/vida
+      SECRET_KEY: ci-secret-key-at-least-32-characters-long
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install deps
+        run: uv sync
+      - name: Ruff
+        run: uv run ruff check .
+      - name: Pytest
+        run: uv run pytest -q

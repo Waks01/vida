@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "Vida",
+    "slug": "vida",
+    "version": "0.1.0",
+    "icon": "./assets/icon.png",
+    "orientation": "portrait",
+    "scheme": "vida",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.vida.mobile"
+    },
+    "android": {
+      "package": "app.vida.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0E0E12"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-system-ui",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0F0F14",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3898064484524772~7285646968",
+          "iosAppId": "ca-app-pub-3898064484524772~7285646968"
+        }
+      ],
+      "react-native-video"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "cb8ea7ce-c565-4f55-80fb-934d3cce3d34"
+      }
+    }
+  }
+}

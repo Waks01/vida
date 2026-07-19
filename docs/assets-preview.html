@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vida — Asset Design Preview</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        background: #0f0f14;
+        color: #e6e6f0;
+        padding: 48px 40px;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #ff2d95, #8b2dff, #22d3ee);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 6px;
+      }
+      .subtitle {
+        color: #888;
+        margin-bottom: 44px;
+        max-width: 860px;
+        line-height: 1.6;
+        font-size: 14px;
+      }
+      .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #888;
+        margin: 36px 0 18px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #1f1f2b;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 22px;
+      }
+      .card {
+        background: #15151d;
+        border: 1px solid #23232f;
+        border-radius: 16px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+      }
+      .label {
+        font-size: 12px;
+        color: #9a9ab0;
+        text-align: center;
+        line-height: 1.5;
+      }
+      .label b {
+        color: #e6e6f0;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      /* logo gradient */
+      .glow {
+        filter: drop-shadow(0 0 14px rgba(255, 45, 149, 0.45))
+          drop-shadow(0 0 22px rgba(34, 211, 238, 0.25));
+      }
+
+      .app-icon {
+        width: 132px;
+        height: 132px;
+        border-radius: 28px;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .phone {
+        width: 210px;
+        height: 420px;
+        border-radius: 34px;
+        background: #000;
+        border: 3px solid #2a2a36;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .notch {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 96px;
+        height: 22px;
+        background: #000;
+        border-radius: 0 0 14px 14px;
+        z-index: 2;
+      }
+      .screen {
+        width: 100%;
+        height: 100%;
+        background: #0f0f14;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+      }
+      .wordmark {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #fff;
+      }
+      .tag {
+        font-size: 8px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #777;
+        margin-top: 2px;
+      }
+
+      .checker {
+        width: 132px;
+        height: 132px;
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #15151d;
+        background-image:
+          linear-gradient(45deg, #23232f 25%, transparent 25%),
+          linear-gradient(-45deg, #23232f 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #23232f 75%),
+          linear-gradient(-45deg, transparent 75%, #23232f 75%);
+        background-size: 16px 16px;
+        background-position:
+          0 0,
+          0 8px,
+          8px -8px,
+          -8px 0;
+      }
+      .mono {
+        width: 132px;
+        height: 132px;
+        background: #fff;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .fav {
+        width: 64px;
+        height: 64px;
+        background: #000;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .note {
+        margin-top: 30px;
+        font-size: 13px;
+        color: #777;
+        line-height: 1.7;
+        max-width: 860px;
+      }
+      code {
+        background: #1c1c26;
+        padding: 1px 6px;
+        border-radius: 5px;
+        color: #c9a9ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Vida — Asset Design Preview</h1>
+      <p class="subtitle">
+        Spec from reference: abstract
+        <b>"V" loop / infinity / play-loop</b> mark, neon gradient
+        <code>hot pink → electric violet → deep cyan</code>, glowing on
+        near-black <code>#0F0F14</code>.
+      </p>
+
+      <div class="section-title">Primary Assets</div>
+      <div class="grid">
+        <!-- App Icon -->
+        <div class="card">
+          <div class="app-icon">
+            <svg class="glow" width="92" height="92" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient
+                  id="g1"
+                  x1="0"
+                  y1="0"
+                  x2="100"
+                  y2="100"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stop-color="#ff2d95" />
+                  <stop offset="0.5" stop-color="#8b2dff" />
+                  <stop offset="1" stop-color="#22d3ee" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M50 16 C30 40 14 58 14 70 C14 82 26 90 50 90 C74 90 86 82 86 70 C86 58 70 40 50 16 Z"
+                fill="none"
+                stroke="url(#g1)"
+                stroke-width="11"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M34 64 C40 74 60 74 66 64"
+                fill="none"
+                stroke="url(#g1)"
+                stroke-width="9"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <div class="label"><b>App Icon</b>1024×1024 · no alpha</div>
+        </div>
+
+        <!-- Splash -->
+        <div class="card">
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="screen">
+              <svg class="glow" width="66" height="66" viewBox="0 0 100 100">
+                <defs>
+                  <linearGradient
+                    id="g2"
+                    x1="0"
+                    y1="0"
+                    x2="100"
+                    y2="100"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stop-color="#ff2d95" />
+                    <stop offset="0.5" stop-color="#8b2dff" />
+                    <stop offset="1" stop-color="#22d3ee" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M50 16 C30 40 14 58 14 70 C14 82 26 90 50 90 C74 90 86 82 86 70 C86 58 70 40 50 16 Z"
+                  fill="none"
+                  stroke="url(#g2)"
+                  stroke-width="11"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M34 64 C40 74 60 74 66 64"
+                  fill="none"
+                  stroke="url(#g2)"
+                  stroke-width="9"
+                  stroke-linecap="round"
+                />
+              </svg>
+              <div class="wordmark">Vida</div>
+              <div class="tag">Every Minute. Every Drama. Earned.</div>
+            </div>
+          </div>
+          <div class="label">
+            <b>Splash Screen &amp; Icon</b>1280×1280 · phone mockup + wordmark
+          </div>
+        </div>
+
+        <!-- Adaptive Foreground -->
+        <div class="card">
+          <div class="checker">
+            <svg class="glow" width="92" height="92" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient
+                  id="g3"
+                  x1="0"
+                  y1="0"
+                  x2="100"
+                  y2="100"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stop-color="#ff2d95" />
+                  <stop offset="0.5" stop-color="#8b2dff" />
+                  <stop offset="1" stop-color="#22d3ee" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M50 16 C30 40 14 58 14 70 C14 82 26 90 50 90 C74 90 86 82 86 70 C86 58 70 40 50 16 Z"
+                fill="none"
+                stroke="url(#g3)"
+                stroke-width="11"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M34 64 C40 74 60 74 66 64"
+                fill="none"
+                stroke="url(#g3)"
+                stroke-width="9"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <div class="label">
+            <b>Adaptive Foreground</b>transparent PNG · checkerboard
+          </div>
+        </div>
+
+        <!-- Monochrome -->
+        <div class="card">
+          <div class="mono">
+            <svg width="92" height="92" viewBox="0 0 100 100">
+              <path
+                d="M50 16 C30 40 14 58 14 70 C14 82 26 90 50 90 C74 90 86 82 86 70 C86 58 70 40 50 16 Z"
+                fill="none"
+                stroke="#000"
+                stroke-width="11"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M34 64 C40 74 60 74 66 64"
+                fill="none"
+                stroke="#000"
+                stroke-width="9"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <div class="label">
+            <b>Monochrome Icon</b>black outline · Android 13+ theming
+          </div>
+        </div>
+
+        <!-- Favicon -->
+        <div class="card">
+          <div class="fav">
+            <svg class="glow" width="42" height="42" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient
+                  id="g4"
+                  x1="0"
+                  y1="0"
+                  x2="100"
+                  y2="100"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stop-color="#ff2d95" />
+                  <stop offset="0.5" stop-color="#8b2dff" />
+                  <stop offset="1" stop-color="#22d3ee" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M50 16 C30 40 14 58 14 70 C14 82 26 90 50 90 C74 90 86 82 86 70 C86 58 70 40 50 16 Z"
+                fill="none"
+                stroke="url(#g4)"
+                stroke-width="11"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M34 64 C40 74 60 74 66 64"
+                fill="none"
+                stroke="url(#g4)"
+                stroke-width="9"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <div class="label"><b>Favicon</b>48×48 / 64×64</div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        Animated Splash Concept (Lottie / Rive / Native)
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="app-icon" style="opacity: 0.3">
+            <svg class="glow" width="92" height="92" viewBox="0 0 100 100">
+              <use href="#loop" />
+            </svg>
+          </div>
+          <div class="label">Initial Load</div>
+        </div>
+        <div class="card">
+          <div class="app-icon" style="opacity: 0.55">
+            <svg class="glow" width="92" height="92" viewBox="0 0 100 100">
+              <use href="#loop" />
+            </svg>
+          </div>
+          <div class="label">Animation In</div>
+        </div>
+        <div class="card">
+          <div class="app-icon" style="opacity: 0.8">
+            <svg class="glow" width="92" height="92" viewBox="0 0 100 100">
+              <use href="#loop" />
+            </svg>
+          </div>
+          <div class="label">Full Opacity</div>
+        </div>
+        <div class="card">
+          <div class="app-icon">
+            <svg class="glow" width="92" height="92" viewBox="0 0 100 100">
+              <use href="#loop" />
+            </svg>
+          </div>
+          <div class="label">Transition / Handoff</div>
+        </div>
+      </div>
+
+      <svg width="0" height="0" style="position: absolute">
+        <defs>
+          <linearGradient
+            id="g5"
+            x1="0"
+            y1="0"
+            x2="100"
+            y2="100"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stop-color="#ff2d95" />
+            <stop offset="0.5" stop-color="#8b2dff" />
+            <stop offset="1" stop-color="#22d3ee" />
+          </linearGradient>
+          <g id="loop">
+            <path
+              d="M50 16 C30 40 14 58 14 70 C14 82 26 90 50 90 C74 90 86 82 86 70 C86 58 70 40 50 16 Z"
+              fill="none"
+              stroke="url(#g5)"
+              stroke-width="11"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M34 64 C40 74 60 74 66 64"
+              fill="none"
+              stroke="url(#g5)"
+              stroke-width="9"
+              stroke-linecap="round"
+            />
+          </g>
+        </defs>
+      </svg>
+
+      <p class="note">
+        Logo mark is an abstract <b>"V" loop / play-loop</b> with a neon
+        <code>#ff2d95 → #8b2dff → #22d3ee</code> gradient and ambient glow on
+        <code>#0F0F14</code>. Tell me if you want the loop shape tuned
+        (thinner/thicker, more infinity-like) or the gradient adjusted.
+      </p>
+    </div>
+  </body>
+</html>

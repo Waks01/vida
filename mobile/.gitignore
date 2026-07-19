@@ -1,0 +1,28 @@
+# Expo / Metro
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+ios/
+android/
+
+# Dependencies
+node_modules/
+
+# Env
+.env
+.env.local
+
+# Build artifacts
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Misc
+npm-debug.*
+*.log
+.DS_Store

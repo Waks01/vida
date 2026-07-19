@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="vida" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff2d95"/>
+      <stop offset="0.5" stop-color="#8b2dff"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#vida)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 16 C30 40 14 58 14 70 C14 82 26 90 50 90 C74 90 86 82 86 70 C86 58 70 40 50 16 Z" stroke-width="11"/>
+    <path d="M34 64 C40 74 60 74 66 64" stroke-width="9"/>
+  </g>
+</svg>

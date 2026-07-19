@@ -1,0 +1,43 @@
+# ─── Dependencies / build
+node_modules/
+.pnp*
+.yarn/*
+npm-debug.log*
+.pnpm-debug.log*
+bun.lockb
+
+# ─── Env / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# ─── Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.uv/
+*.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ─── Expo / RN
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.keystore
+expo-env-local.json
+
+# ─── IDE / OS
+.vscode/*
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# ─── Docs preview (generated)
+docs/.cache/

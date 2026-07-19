@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vida — DaisyUI Theme Chooser</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+        background: #0b0b12;
+        color: #e8e8ef;
+        padding: 32px;
+      }
+      h1 {
+        font-size: 26px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .sub {
+        font-size: 14px;
+        color: #9a93b0;
+        color: #9a93b0;
+        color: #9b94b8;
+        margin-bottom: 24px;
+        max-width: 760px;
+      }
+      .controls {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 28px;
+      }
+      select,
+      button {
+        font-family: inherit;
+        font-size: 14px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid #2a2a3a;
+        background: #16161f;
+        color: #e8e8ef;
+        cursor: pointer;
+      }
+      button.preview {
+        background: #7c3aed;
+        color: #fff;
+        border: none;
+        font-weight: 600;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      .theme-card {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        cursor: pointer;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
+      }
+      .theme-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      }
+      .theme-card.selected {
+        outline: 3px solid #7c3aed;
+        outline-offset: 2px;
+      }
+      .swatches {
+        display: flex;
+        height: 64px;
+      }
+      .sw {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        font-size: 10px;
+        font-weight: 700;
+        position: relative;
+      }
+      .meta {
+        padding: 14px 16px;
+        background: #101018;
+      }
+      .meta .name {
+        font-size: 15px;
+        font-weight: 700;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .meta .kind {
+        font-size: 11px;
+        color: #8a83a0;
+        color: #8a83a0;
+      }
+      .chip {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .chip.dark {
+        background: rgba(124, 58, 237, 0.35);
+        color: #d8c8ff;
+      }
+      .chip.light {
+        background: rgba(245, 158, 11, 0.3);
+        color: #ffe1ad;
+      }
+
+      /* ── Live Vida preview (uses DaisyUI-style vars) ── */
+      #previewWrap {
+        margin-top: 40px;
+        display: none;
+      }
+      #previewWrap.show {
+        display: block;
+      }
+      .demo {
+        background: var(--c-bg);
+        color: var(--c-text);
+        border-radius: 20px;
+        padding: 28px;
+        max-width: 920px;
+        margin: 0 auto;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .demo-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .logo {
+        font-size: 30px;
+        font-weight: 900;
+        background: linear-gradient(135deg, var(--c-primary), var(--c-accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .pill {
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--c-accent);
+      }
+      .cards {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .card {
+        flex: 1;
+        min-width: 200px;
+        background: var(--c-surface);
+        border: 1px solid var(--c-border);
+        border-radius: 16px;
+        padding: 18px;
+      }
+      .card h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+      .card p {
+        font-size: 13px;
+        opacity: 0.75;
+      }
+      .btnrow {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .btn {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 20px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: var(--c-primary);
+        color: var(--c-primary-content);
+      }
+      .btn.coin {
+        background: var(--c-accent);
+        color: var(--c-accent-content);
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--c-text);
+        border: 1px solid var(--c-border);
+      }
+      .player {
+        margin-top: 20px;
+        height: 160px;
+        border-radius: 16px;
+        background: linear-gradient(
+          135deg,
+          var(--c-primary),
+          var(--c-secondary)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Vida — DaisyUI Theme Chooser</h1>
+    <div class="sub">
+      All 35 DaisyUI v5 themes rendered with their real color tokens. Click a
+      card to preview how Vida's core UI would look, then pick the ones you want
+      (we'll wire them into <code>vida-design.html</code>).
+    </div>
+
+    <div class="controls">
+      <label
+        >Filter:
+        <select id="filter">
+          <option value="all">All themes</option>
+          <option value="dark">Dark only</option>
+          <option value="light">Light only</option>
+        </select>
+      </label>
+      <button class="preview" id="openPreview">
+        ▶ Preview selected in Vida UI
+      </button>
+      <span id="selName" style="font-size: 13px; color: #9b94b8"></span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div id="previewWrap">
+      <div class="demo" id="demo">
+        <div class="demo-head">
+          <div class="logo">Vida</div>
+          <div class="pill">🪙 1,250 coins</div>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <h3>🔥 Trending Now</h3>
+            <p>
+              Bite-sized vertical dramas. Romance, thriller, fantasy — all
+              addictive.
+            </p>
+          </div>
+          <div class="card">
+            <h3>🎁 Daily Check-in</h3>
+            <p>Watch 5s ad = +50 coins. Streak bonus up to +200.</p>
+          </div>
+          <div class="card">
+            <h3>👑 Go VIP</h3>
+            <p>Unlock all episodes. No ads. Paystack / Stripe / Google Pay.</p>
+          </div>
+        </div>
+        <div class="btnrow">
+          <button class="btn primary">▶ Start Watching</button>
+          <button class="btn coin">🪙 Buy 500 Coins</button>
+          <button class="btn ghost">＋ My List</button>
+        </div>
+        <div class="player">🎬</div>
+      </div>
+    </div>
+
+    <script>
+      // 35 DaisyUI v5 themes with their real color tokens (H=hex, rounded)
+      // fields: bg(base-100), surface(base-200), border(base-300), text(base-content),
+      //         primary, primaryContent, secondary, accent, success, warning, error
+      const THEMES = [
+        {
+          n: "light",
+          k: "light",
+          bg: "#ffffff",
+          s: "#f2f2f2",
+          b: "#e5e6e6",
+          t: "#1f2937",
+          p: "#570df8",
+          pc: "#ffffff",
+          s2: "#f000b8",
+          a: "#37cdbe",
+          su: "#1c7d45",
+          w: "#f2cc1a",
+          e: "#d50000",
+        },
+        {
+          n: "dark",
+          k: "dark",
+          bg: "#1e1e2e",
+          s: "#2a2a3a",
+          b: "#3d3d4d",
+          t: "#c2c2d6",
+          p: "#570df8",
+          pc: "#ffffff",
+          s2: "#f000b8",
+          a: "#37cdbe",
+          su: "#1c7d45",
+          w: "#f2cc1a",
+          e: "#d50000",
+        },
+        {
+          n: "cupcake",
+          k: "light",
+          bg: "#faf7f5",
+          s: "#f2e9e3",
+          b: "#e5d5ca",
+          t: "#41291d",
+          p: "#65c3f3",
+          pc: "#14191f",
+          s2: "#ef9fbc",
+          a: "#eeaf3a",
+          su: "#1c7d45",
+          w: "#f2cc1a",
+          e: "#ef5788",
+        },
+        {
+          n: "bumblebee",
+          k: "light",
+          bg: "#fffffe",
+          s: "#f8f8f7",
+          b: "#e6e6e6",
+          t: "#303633",
+          p: "#f7d52c",
+          pc: "#33270b",
+          s2: "#41d2c3",
+          a: "#ee63a2",
+          su: "#22c55e",
+          w: "#f2cc1a",
+          e: "#ef4d48",
+        },
+        {
+          n: "emerald",
+          k: "light",
+          bg: "#f4f4f4",
+          s: "#e9e9e9",
+          b: "#d7d7d7",
+          t: "#141e14",
+          p: "#66cc8a",
+          pc: "#0f1a10",
+          s2: "#347a52",
+          a: "#46cfb6",
+          su: "#36ad6b",
+          w: "#e2c512",
+          e: "#e24b4b",
+        },
+        {
+          n: "corporate",
+          k: "light",
+          bg: "#ffffff",
+          s: "#f5f5f5",
+          b: "#e6e6e6",
+          t: "#18181b",
+          p: "#1d4ed8",
+          pc: "#ffffff",
+          s2: "#2f9e44",
+          a: "#d926a9",
+          su: "#16a34a",
+          w: "#eab308",
+          e: "#dc2626",
+        },
+        {
+          n: "synthwave",
+          k: "dark",
+          bg: "#1e1e2e",
+          s: "#27274a",
+          b: "#3a3a5c",
+          t: "#e0def4",
+          p: "#e779c1",
+          pc: "#16141f",
+          s2: "#7b6ff6",
+          a: "#a5e8f3",
+          su: "#4ade80",
+          w: "#f8c460",
+          e: "#f15bb5",
+        },
+        {
+          n: "retro",
+          k: "dark",
+          bg: "#171717",
+          s: "#262626",
+          b: "#404040",
+          t: "#e6e6e6",
+          p: "#ef9995",
+          pc: "#171717",
+          s2: "#a4a9b0",
+          a: "#c2cacf",
+          su: "#3fb950",
+          w: "#e8b708",
+          e: "#e5534b",
+        },
+        {
+          n: "cyberpunk",
+          k: "dark",
+          bg: "#0a0a0f",
+          s: "#18181f",
+          b: "#2a2a3a",
+          t: "#f4f4f8",
+          p: "#ff7597",
+          pc: "#ffeeee",
+          s2: "#00d8d6",
+          a: "#1d98a6",
+          su: "#34d399",
+          w: "#f2cc1a",
+          e: "#ff5b5b",
+        },
+        {
+          n: "valentine",
+          k: "light",
+          bg: "#fee7ef",
+          s: "#f6d6e3",
+          b: "#e7b8cb",
+          t: "#451526",
+          p: "#e96d7b",
+          pc: "#fff0f4",
+          s2: "#a991f6",
+          a: "#f4c6b6",
+          su: "#46a758",
+          w: "#e0a106",
+          e: "#e5484d",
+        },
+        {
+          n: "halloween",
+          k: "dark",
+          bg: "#12100e",
+          s: "#1c1917",
+          b: "#292524",
+          t: "#f4ede4",
+          p: "#f08c00",
+          pc: "#ffffff",
+          s2: "#833ae0",
+          a: "#5495ff",
+          su: "#46a758",
+          w: "#e0a106",
+          e: "#e5484d",
+        },
+        {
+          n: "garden",
+          k: "light",
+          bg: "#ece9e3",
+          s: "#e0dcd3",
+          b: "#cfc9bd",
+          t: "#1a1d16",
+          p: "#5fa05a",
+          pc: "#0e140d",
+          s2: "#be8b5b",
+          a: "#5ab1a3",
+          su: "#4d9e3e",
+          w: "#c9a227",
+          e: "#d1493b",
+        },
+        {
+          n: "forest",
+          k: "dark",
+          bg: "#1f2419",
+          s: "#2a3122",
+          b: "#3a4430",
+          t: "#d7e0c8",
+          p: "#6a994e",
+          pc: "#10140c",
+          s2: "#a4906e",
+          a: "#4c9e8a",
+          su: "#57b357",
+          w: "#c9a227",
+          e: "#e5594b",
+        },
+        {
+          n: "aqua",
+          k: "dark",
+          bg: "#11201f",
+          s: "#1a2e2d",
+          b: "#293f3e",
+          t: "#d7f0ef",
+          p: "#37c2b9",
+          pc: "#04130f",
+          s2: "#49e69a",
+          a: "#37c2b9",
+          su: "#34d399",
+          w: "#f2cc1a",
+          e: "#f06a6a",
+        },
+        {
+          n: "lofi",
+          k: "light",
+          bg: "#ececec",
+          s: "#e0e0e0",
+          b: "#cfcfcf",
+          t: "#2a2a2a",
+          p: "#8f8f8f",
+          pc: "#ffffff",
+          s2: "#a6a6a6",
+          a: "#bdbdbd",
+          su: "#7ea07e",
+          w: "#d9c47a",
+          e: "#c97a7a",
+        },
+        {
+          n: "pastel",
+          k: "light",
+          bg: "#f7f7f7",
+          s: "#eeeeee",
+          b: "#e0e0e0",
+          t: "#4d4d4d",
+          p: "#b4c7e3",
+          pc: "#2b2b2b",
+          s2: "#f7c4d7",
+          a: "#c9e4c9",
+          su: "#a7d3a7",
+          w: "#f0dca0",
+          e: "#e6a3a3",
+        },
+        {
+          n: "fantasy",
+          k: "dark",
+          bg: "#16121d",
+          s: "#211a2c",
+          b: "#342a44",
+          t: "#e6d9f2",
+          p: "#b36ceb",
+          pc: "#1a0f1f",
+          s2: "#e8a87c",
+          a: "#5ccfe0",
+          su: "#6bc18b",
+          w: "#e6c15a",
+          e: "#eb6a91",
+        },
+        {
+          n: "wireframe",
+          k: "light",
+          bg: "#ffffff",
+          s: "#ffffff",
+          b: "#b8b8b8",
+          t: "#1f1f1f",
+          p: "#1f1f1f",
+          pc: "#ffffff",
+          s2: "#1f1f1f",
+          a: "#1f1f1f",
+          su: "#1f1f1f",
+          w: "#1f1f1f",
+          e: "#1f1f1f",
+        },
+        {
+          n: "black",
+          k: "dark",
+          bg: "#000000",
+          s: "#0a0a0a",
+          b: "#1a1a1a",
+          t: "#ffffff",
+          p: "#ffffff",
+          pc: "#000000",
+          s2: "#cccccc",
+          a: "#aaaaaa",
+          su: "#66cc66",
+          w: "#ffe066",
+          e: "#ff6666",
+        },
+        {
+          n: "luxury",
+          k: "dark",
+          bg: "#0f0c0a",
+          s: "#191310",
+          b: "#2a211b",
+          t: "#f0d9b5",
+          p: "#d4af37",
+          pc: "#1a1407",
+          s2: "#7a5c3e",
+          a: "#c09b5b",
+          su: "#5fa85f",
+          w: "#e0c068",
+          e: "#d96b6b",
+        },
+        {
+          n: "dracula",
+          k: "dark",
+          bg: "#282a36",
+          s: "#343746",
+          b: "#44475a",
+          t: "#f8f8f2",
+          p: "#bd93f9",
+          pc: "#1a1b23",
+          s2: "#ff79c6",
+          a: "#8be9fd",
+          su: "#50fa7b",
+          w: "#f1fa8c",
+          e: "#ff5555",
+        },
+        {
+          n: "cmyk",
+          k: "dark",
+          bg: "#0e0e0e",
+          s: "#1a1a1a",
+          b: "#2b2b2b",
+          t: "#ffffff",
+          p: "#00bcd4",
+          pc: "#00161a",
+          s2: "#ec008c",
+          a: "#fff200",
+          su: "#00bcd4",
+          w: "#fff200",
+          e: "#ec008c",
+        },
+        {
+          n: "autumn",
+          k: "dark",
+          bg: "#18120f",
+          s: "#241a14",
+          b: "#382820",
+          t: "#e7d3c4",
+          p: "#b46a2e",
+          pc: "#150d06",
+          s2: "#8c4a2f",
+          a: "#d98a3d",
+          su: "#5b9e3a",
+          w: "#d9a02b",
+          e: "#d65a4d",
+        },
+        {
+          n: "business",
+          k: "dark",
+          bg: "#1c1917",
+          s: "#29241f",
+          b: "#3d362e",
+          t: "#e8e2d9",
+          p: "#708090",
+          pc: "#11100e",
+          s2: "#b6aa90",
+          a: "#9fb3c8",
+          su: "#5f9e6b",
+          w: "#d9c07a",
+          e: "#d9736b",
+        },
+        {
+          n: "acid",
+          k: "dark",
+          bg: "#0a0a0a",
+          s: "#141414",
+          b: "#242424",
+          t: "#dfff4f",
+          p: "#dfff4f",
+          pc: "#0a0a0a",
+          s2: "#b6e62e",
+          a: "#7dd3fc",
+          su: "#4ade80",
+          w: "#f2cc1a",
+          e: "#ff5a5a",
+        },
+        {
+          n: "lemonade",
+          k: "light",
+          bg: "#fbfbf2",
+          s: "#f0f0e6",
+          b: "#e0e0d0",
+          t: "#2c2c1e",
+          p: "#9bd107",
+          pc: "#12160a",
+          s2: "#e0c521",
+          a: "#7fb069",
+          su: "#4d9e3e",
+          w: "#c9a227",
+          e: "#d1493b",
+        },
+        {
+          n: "night",
+          k: "dark",
+          bg: "#0f172a",
+          s: "#1a233a",
+          b: "#29364f",
+          t: "#cbd5e1",
+          p: "#3abff8",
+          pc: "#06121f",
+          s2: "#8b5cf6",
+          a: "#22d3ee",
+          su: "#4ade80",
+          w: "#facc15",
+          e: "#f87171",
+        },
+        {
+          n: "coffee",
+          k: "dark",
+          bg: "#20150c",
+          s: "#2b1d11",
+          b: "#3e2b1a",
+          t: "#e6d3c0",
+          p: "#967259",
+          pc: "#100a05",
+          s2: "#c89f7b",
+          a: "#8c6a4f",
+          su: "#6a9b5a",
+          w: "#d9a04a",
+          e: "#c96b5b",
+        },
+        {
+          n: "winter",
+          k: "light",
+          bg: "#ffffff",
+          s: "#f6f6f9",
+          b: "#e4e4ed",
+          t: "#1f2937",
+          p: "#0ea5e9",
+          pc: "#ffffff",
+          s2: "#6366f1",
+          a: "#14b8a6",
+          su: "#22c55e",
+          w: "#eab308",
+          e: "#ef4444",
+        },
+        {
+          n: "dim",
+          k: "dark",
+          bg: "#14161a",
+          s: "#1c1f26",
+          b: "#2a2e38",
+          t: "#c9cdd5",
+          p: "#6f91ac",
+          pc: "#0d0f12",
+          s2: "#8b6fb6",
+          a: "#4fb0a6",
+          su: "#5c9e6b",
+          w: "#d9c07a",
+          e: "#d9736b",
+        },
+        {
+          n: "nord",
+          k: "dark",
+          bg: "#2e3440",
+          s: "#3b4252",
+          b: "#434c5e",
+          t: "#eceff4",
+          p: "#88c0d0",
+          pc: "#1a1f26",
+          s2: "#b48ead",
+          a: "#a3be8c",
+          su: "#a3be8c",
+          w: "#ebcb8b",
+          e: "#bf616a",
+        },
+        {
+          n: "sunset",
+          k: "dark",
+          bg: "#1a0e1a",
+          s: "#2a1626",
+          b: "#3a2034",
+          t: "#ffeaf6",
+          p: "#f472b6",
+          pc: "#1a0e1a",
+          s2: "#fb923c",
+          a: "#f59e0b",
+          su: "#4ade80",
+          w: "#fb923c",
+          e: "#f87171",
+        },
+        {
+          n: "caramellatte",
+          k: "light",
+          bg: "#fffaf2",
+          s: "#fbf3e8",
+          b: "#ece0cc",
+          t: "#3b2417",
+          p: "#c3915a",
+          pc: "#1a0f06",
+          s2: "#a97b4f",
+          a: "#d98a3d",
+          su: "#6a9b5a",
+          w: "#d9a04a",
+          e: "#c96b5b",
+        },
+        {
+          n: "abyss",
+          k: "dark",
+          bg: "#0a0f1a",
+          s: "#0f1626",
+          b: "#1a2438",
+          t: "#a9c4e0",
+          p: "#1f6feb",
+          pc: "#02060f",
+          s2: "#00b3c4",
+          a: "#3ad0d4",
+          su: "#2fa86a",
+          w: "#e0c068",
+          e: "#e5557a",
+        },
+        {
+          n: "silk",
+          k: "dark",
+          bg: "#1c1c1f",
+          s: "#26262a",
+          b: "#36363b",
+          t: "#e6e3ea",
+          p: "#b8b8c0",
+          pc: "#161618",
+          s2: "#8a8a92",
+          a: "#a0a0aa",
+          su: "#7ea07e",
+          w: "#d9c47a",
+          e: "#c97a7a",
+        },
+      ];
+
+      const grid = document.getElementById("grid");
+      const filter = document.getElementById("filter");
+      const previewWrap = document.getElementById("previewWrap");
+      const demo = document.getElementById("demo");
+      const selName = document.getElementById("selName");
+      let selected = null;
+
+      function applyPreview(t) {
+        demo.style.setProperty("--c-bg", t.bg);
+        demo.style.setProperty("--c-surface", t.s);
+        demo.style.setProperty("--c-border", t.b);
+        demo.style.setProperty("--c-text", t.t);
+        demo.style.setProperty("--c-primary", t.p);
+        demo.style.setProperty("--c-primary-content", t.pc);
+        demo.style.setProperty("--c-secondary", t.s2);
+        demo.style.setProperty("--c-accent", t.a);
+        previewWrap.classList.add("show");
+        selName.textContent = "Selected: " + t.n + " (" + t.k + ")";
+      }
+
+      function render() {
+        grid.innerHTML = "";
+        THEMES.filter((t) =>
+          filter.value === "all" ? true : t.k === filter.value,
+        ).forEach((t) => {
+          const card = document.createElement("div");
+          card.className = "theme-card" + (selected === t.n ? " selected" : "");
+          card.onclick = () => {
+            selected = t.n;
+            // update highlight without rebuilding the whole grid
+            document.querySelectorAll(".theme-card").forEach((c) => c.classList.remove("selected"));
+            card.classList.add("selected");
+            // immediately update the live Vida preview on click
+            applyPreview(t);
+            previewWrap.scrollIntoView({ behavior: "smooth" });
+          };
+          const order = [t.bg, t.s, t.b, t.p, t.s2, t.a, t.su, t.w, t.e, t.t];
+          card.innerHTML =
+            '<div class="swatches">' +
+            order.map((c) => '<div class="sw" style="background:' + c + ';color:' + c + '">.</div>').join("") +
+            "</div>" +
+            '<div class="meta">' +
+              '<div class="name">' + t.n + ' <span class="chip ' + t.k + '">' + t.k + "</span></div>" +
+              '<div class="kind" style="font-size:11px;color:#8a83a0;">primary ' + t.p + " · accent " + t.a + "</div>" +
+            "</div>";
+          grid.appendChild(card);
+        });
+      }
+
+      document.getElementById("openPreview").onclick = () => {
+        if (!selected) {
+          alert("Click a theme card first to select it.");
+          return;
+        }
+        const t = THEMES.find((x) => x.n === selected);
+        applyPreview(t);
+        previewWrap.scrollIntoView({ behavior: "smooth" });
+      };
+
+      filter.onchange = render;
+      render();
+    </script>
+  </body>
+</html>
