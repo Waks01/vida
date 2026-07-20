@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { View, Text } from "react-native";
+import { Text } from "react-native";
 import { router } from "expo-router";
 
+import { AuthShell } from "../../src/shared/components/AuthShell";
 import { VButton } from "../../src/shared/components/VButton";
-import { VPinField } from "../../src/shared/components/VPinField";
 import { VInput } from "../../src/shared/components/VInput";
+import { VPinField } from "../../src/shared/components/VPinField";
 import { useAuth } from "../../src/features/auth/hooks/useAuth";
 import { useTheme } from "../../src/providers/ThemeProvider";
 
@@ -20,17 +21,23 @@ export default function PinLogin() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: tokens["--vida-bg"], padding: 24, justifyContent: "center" }}>
-      <Text style={{ color: tokens["--vida-text-primary"], fontSize: 24, fontWeight: "800", marginBottom: 8 }}>
-        PIN login
-      </Text>
-      <Text style={{ color: tokens["--vida-text-muted"], marginBottom: 20 }}>
-        Enter your email + 4–6 digit PIN
-      </Text>
-      <VInput label="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+    <AuthShell
+      icon="lock-closed"
+      title="PIN login"
+      subtitle="Enter your email + 4–6 digit PIN"
+      footer={
+        <Text style={{ color: tokens["--vida-text-muted"], fontSize: 12 }}>
+          Forgot?{" "}
+          <Text style={{ color: tokens["--vida-primary"], fontWeight: "700" }} onPress={() => router.push("/login")}>
+            Email login
+          </Text>
+        </Text>
+      }
+    >
+      <VInput label="Email Address" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder="you@example.com" />
       <VPinField length={6} onComplete={setPin} />
-      {error ? <Text style={{ color: "#ef4444", marginTop: 12 }}>{error}</Text> : null}
-      <VButton title="Unlock" loading={isLoading} fullWidth onPress={onSubmit} style={{ marginTop: 24 }} />
-    </View>
+      {error ? <Text style={{ color: tokens["--vida-danger"], fontSize: 12 }}>{error}</Text> : null}
+      <VButton title="Unlock →" loading={isLoading} fullWidth onPress={onSubmit} disabled={pin.length < 4} />
+    </AuthShell>
   );
 }

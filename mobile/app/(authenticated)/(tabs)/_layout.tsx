@@ -5,10 +5,10 @@ import { VBottomNav, type TabItem } from "../../../src/shared/components/VBottom
 import { useTheme } from "../../../src/providers/ThemeProvider";
 
 const TABS: TabItem[] = [
-  { key: "home", label: "Home", icon: "🏠", href: "/(tabs)" },
-  { key: "search", label: "Search", icon: "🔍", href: "/(tabs)/search" },
-  { key: "wallet", label: "Wallet", icon: "✦", href: "/(tabs)/wallet" },
-  { key: "profile", label: "Me", icon: "👤", href: "/(tabs)/profile" },
+  { key: "home", label: "Home", icon: "home", href: "/(tabs)" },
+  { key: "search", label: "Search", icon: "search", href: "/(tabs)/search" },
+  { key: "wallet", label: "Wallet", icon: "wallet", href: "/(tabs)/wallet" },
+  { key: "profile", label: "Me", icon: "person", href: "/(tabs)/profile" },
 ];
 
 export default function TabsLayout() {

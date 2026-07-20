@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
-import { FlatList, Text, View, TouchableOpacity, Alert } from "react-native";
+import { FlatList, Text, View, Pressable, Alert } from "react-native";
 import { router } from "expo-router";
-import { creatorsApi } from "../../feed/api/creatorsApi";
+import { LinearGradient } from "expo-linear-gradient";
+
+import { VButton } from "../../../shared/components/VButton";
+import { VIcon } from "../../../shared/components/VIcon";
 import { useTheme } from "../../../providers/ThemeProvider";
+import { creatorsApi } from "../../feed/api/creatorsApi";
 
 interface SeriesItem {
   id: string;
@@ -15,22 +19,26 @@ interface SeriesItem {
 export default function CreatorDashboardScreen() {
   const { tokens } = useTheme();
   const [series, setSeries] = useState<SeriesItem[]>([]);
+  const [earnings, setEarnings] = useState<{ total_earnings: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadSeries();
+    loadEarnings();
   }, []);
 
   const loadSeries = async () => {
     try {
       const data = await creatorsApi.getSeriesList();
-      setSeries(data.map((s) => ({
-        id: s.id,
-        title: s.title,
-        status: s.status,
-        total_views: s.total_views,
-        episode_count: s.episodes?.length ?? 0,
-      })));
+      setSeries(
+        data.map((s) => ({
+          id: s.id,
+          title: s.title,
+          status: s.status,
+          total_views: s.total_views,
+          episode_count: s.episodes?.length ?? 0,
+        }))
+      );
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed to load series");
     } finally {
@@ -38,65 +46,131 @@ export default function CreatorDashboardScreen() {
     }
   };
 
+  const loadEarnings = async () => {
+    try {
+      const data = await creatorsApi.getEarnings();
+      setEarnings(data);
+    } catch {
+      // ignore
+    }
+  };
+
   const renderItem = ({ item }: { item: SeriesItem }) => (
-    <TouchableOpacity
+    <Pressable
       onPress={() => router.push({ pathname: "/(authenticated)/series/[id]", params: { id: item.id } })}
       style={{
-        padding: 16,
+        flexDirection: "row",
+        gap: 12,
         backgroundColor: tokens["--vida-surface"],
-        borderRadius: 12,
-        marginBottom: 12,
         borderWidth: 1,
         borderColor: tokens["--vida-border"],
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 8,
       }}
     >
-      <Text style={{ color: tokens["--vida-text-primary"], fontSize: 16, fontWeight: "700" }}>
-        {item.title}
-      </Text>
-      <Text style={{ color: tokens["--vida-text-muted"], fontSize: 13, marginTop: 4 }}>
-        {item.episode_count} episodes · {item.total_views} views
-      </Text>
-      <Text style={{ color: tokens["--vida-accent"], fontSize: 12, marginTop: 4, textTransform: "capitalize" }}>
-        {item.status}
-      </Text>
-    </TouchableOpacity>
+      <View
+        style={{
+          width: 56,
+          height: 80,
+          borderRadius: 8,
+          backgroundColor: tokens["--vida-primary"],
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <VIcon name="film" size={24} color="#fff" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: tokens["--vida-text-primary"], fontSize: 13, fontWeight: "700" }}>{item.title}</Text>
+        <Text style={{ color: tokens["--vida-text-muted"], fontSize: 11, marginTop: 2 }}>
+          {item.episode_count} eps · {item.total_views.toLocaleString()} views
+        </Text>
+        <Text style={{ color: tokens["--vida-success"], fontSize: 11, fontWeight: "600", marginTop: 6, textTransform: "capitalize" }}>
+          {item.status}
+        </Text>
+      </View>
+    </Pressable>
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: tokens["--vida-bg"], padding: 16 }}>
-      <Text style={{ color: tokens["--vida-text-primary"], fontSize: 24, fontWeight: "800", marginBottom: 16 }}>
-        Creator Dashboard
-      </Text>
-
-      <TouchableOpacity
-        onPress={() => Alert.alert("Coming soon", "Series creation form will open here.")}
+    <View style={{ flex: 1, backgroundColor: tokens["--vida-bg"] }}>
+      <View
         style={{
-          backgroundColor: tokens["--vida-primary"],
-          padding: 14,
-          borderRadius: 12,
+          flexDirection: "row",
           alignItems: "center",
-          marginBottom: 16,
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: tokens["--vida-border"],
         }}
       >
-        <Text style={{ color: "#fff", fontWeight: "700" }}>+ New Series</Text>
-      </TouchableOpacity>
+        <Text style={{ color: tokens["--vida-text-primary"], fontSize: 17, fontWeight: "700", flex: 1 }}>Creator Studio</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            backgroundColor: "rgba(124, 58, 237, 0.2)",
+            borderRadius: 999,
+            paddingVertical: 4,
+            paddingHorizontal: 10,
+          }}
+        >
+          <VIcon name="trophy" size={14} color={tokens["--vida-primary-light"]} />
+          <Text style={{ color: tokens["--vida-primary-light"], fontSize: 12, fontWeight: "700" }}>Creator</Text>
+        </View>
+      </View>
 
-      {loading ? (
-        <Text style={{ color: tokens["--vida-text-muted"], textAlign: "center", marginTop: 20 }}>
-          Loading…
-        </Text>
-      ) : (
-        <FlatList
-          data={series}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <Text style={{ color: tokens["--vida-text-muted"], textAlign: "center", marginTop: 20 }}>
-              No series yet. Create your first series above.
+      <FlatList
+        data={series}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 16 }}
+        ListHeaderComponent={
+          <LinearGradient
+            colors={["#065f46", "#10b981"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ borderRadius: 20, padding: 18, marginBottom: 16 }}
+          >
+            <Text style={{ fontSize: 11, color: "#6ee7b7", letterSpacing: 1, fontWeight: "600" }}>TOTAL EARNINGS</Text>
+            <Text style={{ fontSize: 32, fontWeight: "900", color: "#fff", marginTop: 4 }}>
+              ${earnings ? earnings.total_earnings.toFixed(2) : "0.00"}
             </Text>
-          }
-        />
-      )}
+            <Text style={{ fontSize: 12, color: "#6ee7b7", marginTop: 4 }}>65% of ad revenue + unlocks</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+              <View style={{ flex: 1 }}>
+                <VButton
+                  title="Request Payout"
+                  onPress={() => router.push("/(authenticated)/creator/earnings")}
+                />
+              </View>
+              <Pressable
+                onPress={() => router.push("/(authenticated)/creator/earnings")}
+                style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 999, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" }}
+              >
+                <VIcon name="stats-chart" size={20} color="#fff" />
+              </Pressable>
+            </View>
+          </LinearGradient>
+        }
+        renderItem={renderItem}
+        ListEmptyComponent={
+          loading ? (
+            <Text style={{ color: tokens["--vida-text-muted"], textAlign: "center", marginTop: 20 }}>Loading…</Text>
+          ) : (
+            <Text style={{ color: tokens["--vida-text-muted"], textAlign: "center", marginTop: 20 }}>
+              No series yet. Create your first series below.
+            </Text>
+          )
+        }
+        ListFooterComponent={
+          <View style={{ paddingTop: 8 }}>
+            <VButton title="＋ Upload New Series" fullWidth onPress={() => router.push("/(authenticated)/creator/upload")} />
+          </View>
+        }
+      />
     </View>
   );
 }

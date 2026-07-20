@@ -1,11 +1,12 @@
 import { Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../providers/ThemeProvider";
+import { VIcon, type VIconName } from "./VIcon";
 
 export interface TabItem {
   key: string;
   label: string;
-  icon: string; // emoji/glyph placeholder until icon font added
+  icon: VIconName;
   href: string;
 }
 
@@ -37,7 +38,7 @@ export function VBottomNav({ tabs, activeKey, onSelect }: VBottomNavProps) {
             onPress={() => onSelect(tab)}
             style={{ flex: 1, alignItems: "center" }}
           >
-            <Text style={{ fontSize: 20 }}>{tab.icon}</Text>
+            <VIcon name={tab.icon} size={20} color={active ? tokens["--vida-primary"] : tokens["--vida-text-dim"]} />
             <Text
               style={{
                 fontSize: 11,

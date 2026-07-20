@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { View, Text } from "react-native";
+import { Text } from "react-native";
 import { router } from "expo-router";
 
+import { AuthShell } from "../../src/shared/components/AuthShell";
 import { VButton } from "../../src/shared/components/VButton";
 import { VPinField } from "../../src/shared/components/VPinField";
 import { useAuth } from "../../src/features/auth/hooks/useAuth";
@@ -18,7 +19,6 @@ export default function PinSetup() {
     if (pin.length < 4) return;
     setBusy(true);
     try {
-      // Needs a valid access token; user may be null in Phase 0 dev.
       const token = await secureStore.getAccessToken();
       if (token && user) {
         const { authApi } = await import("../../src/features/auth/api/authApi");
@@ -32,15 +32,14 @@ export default function PinSetup() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: tokens["--vida-bg"], padding: 24, justifyContent: "center" }}>
-      <Text style={{ color: tokens["--vida-text-primary"], fontSize: 22, fontWeight: "800", marginBottom: 8 }}>
-        Set your PIN
-      </Text>
-      <Text style={{ color: tokens["--vida-text-muted"], marginBottom: 20 }}>
-        Used to log in and approve purchases.
-      </Text>
+    <AuthShell
+      icon="lock-closed"
+      title="Create a transaction PIN"
+      subtitle="Use this PIN to log in and approve purchases or payouts."
+      footer={<Text style={{ color: tokens["--vida-text-dim"], fontSize: 11 }}>You'll re-enter it to confirm.</Text>}
+    >
       <VPinField length={6} onComplete={setPin} />
-      <VButton title="Save PIN" loading={busy} fullWidth onPress={save} style={{ marginTop: 24 }} disabled={pin.length < 4} />
-    </View>
+      <VButton title="Set PIN →" loading={busy} fullWidth onPress={save} disabled={pin.length < 4} />
+    </AuthShell>
   );
 }

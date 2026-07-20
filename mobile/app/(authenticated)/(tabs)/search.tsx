@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FlatList, Text, TextInput, View } from "react-native";
+import { FlatList, Text, TextInput, View, Pressable } from "react-native";
 
 import { useFeed } from "../../../src/features/feed/hooks/useFeed";
 import { feedApi } from "../../../src/features/feed/api/feedApi";
@@ -39,6 +39,8 @@ export default function SearchScreen() {
 
   const list = query.trim() ? results : series;
 
+  const TRENDING = ["Billionaire", "Werewolf", "Revenge", "Secret Baby", "CEO"];
+
   return (
     <View style={{ flex: 1, backgroundColor: tokens["--vida-bg"], padding: 16 }}>
       <Text style={{ color: tokens["--vida-text-primary"], fontSize: 24, fontWeight: "800", marginBottom: 12 }}>
@@ -58,6 +60,30 @@ export default function SearchScreen() {
           marginBottom: 16,
         }}
       />
+
+      {!query.trim() ? (
+        <>
+          <Text style={{ color: tokens["--vida-text-muted"], fontSize: 13, fontWeight: "700", marginBottom: 8 }}>
+            TRENDING SEARCHES
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            {TRENDING.map((t) => (
+              <Pressable
+                key={t}
+                onPress={() => onSearch(t)}
+                style={{
+                  backgroundColor: "rgba(124, 58, 237, 0.2)",
+                  borderRadius: 999,
+                  paddingVertical: 6,
+                  paddingHorizontal: 14,
+                }}
+              >
+                <Text style={{ color: tokens["--vida-primary-light"], fontSize: 12, fontWeight: "700" }}>{t}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
       {isLoading || searching ? (
         <Text style={{ color: tokens["--vida-text-muted"] }}>Loading…</Text>
       ) : (

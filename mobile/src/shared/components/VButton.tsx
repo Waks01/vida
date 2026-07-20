@@ -11,7 +11,7 @@ import {
 
 import { useTheme } from "../../providers/ThemeProvider";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "coin";
 type Size = "sm" | "md" | "lg";
 
 interface VButtonProps extends Omit<PressableProps, "style"> {
@@ -49,13 +49,19 @@ export function VButton({
     variant === "primary"
       ? tokens["--vida-primary"]
       : variant === "danger"
-        ? "#ef4444"
-        : variant === "secondary"
-          ? tokens["--vida-surface-2"]
-          : "transparent";
+        ? tokens["--vida-danger"]
+        : variant === "coin"
+          ? tokens["--vida-accent"]
+          : variant === "secondary"
+            ? tokens["--vida-surface-2"]
+            : "transparent";
 
   const fg =
-    variant === "ghost" ? tokens["--vida-primary"] : tokens["--vida-text-primary"];
+    variant === "coin"
+      ? "#1a1a1a"
+      : variant === "ghost"
+        ? tokens["--vida-primary"]
+        : tokens["--vida-text-primary"];
 
   return (
     <Pressable

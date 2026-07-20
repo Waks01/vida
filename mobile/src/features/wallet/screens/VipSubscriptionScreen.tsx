@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert, Text, View } from "react-native";
 
 import { VButton } from "../../../shared/components/VButton";
+import { VIcon } from "../../../shared/components/VIcon";
 import { VPinField } from "../../../shared/components/VPinField";
 import { useTheme } from "../../../providers/ThemeProvider";
 import { walletApi } from "../api/walletApi";
@@ -44,9 +45,12 @@ export default function VipSubscriptionScreen({ onSuccess }: { onSuccess?: () =>
 
   return (
     <View style={{ flex: 1, backgroundColor: tokens["--vida-bg"], padding: 16 }}>
-      <Text style={{ color: tokens["--vida-text-primary"], fontSize: 22, fontWeight: "800", marginBottom: 4 }}>
-        👑 Vida VIP
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <VIcon name="trophy" size={22} color={tokens["--vida-primary"]} />
+        <Text style={{ color: tokens["--vida-text-primary"], fontSize: 22, fontWeight: "800" }}>
+          Vida VIP
+        </Text>
+      </View>
       <Text style={{ color: tokens["--vida-accent"], fontSize: 28, fontWeight: "800", marginBottom: 8 }}>
         ${VIP_WEEKLY_USD}/week
       </Text>

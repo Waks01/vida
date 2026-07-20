@@ -39,6 +39,12 @@ export interface ThemeTokens {
   "--vida-text-muted": string;
   "--vida-text-dim": string;
   "--vida-border": string;
+  "--vida-success": string;
+  "--vida-danger": string;
+  "--vida-radius-sm": string;
+  "--vida-radius-md": string;
+  "--vida-radius-lg": string;
+  "--vida-radius-full": string;
   "--shadow-glow": string;
   "--shadow-coin": string;
 }
@@ -64,6 +70,12 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     "--vida-text-muted": "#9a93b0",
     "--vida-text-dim": "#6b6b8c",
     "--vida-border": "#3d3d4d",
+    "--vida-success": "#10b981",
+    "--vida-danger": "#ef4444",
+    "--vida-radius-sm": "6px",
+    "--vida-radius-md": "12px",
+    "--vida-radius-lg": "20px",
+    "--vida-radius-full": "9999px",
     "--shadow-glow": "0 0 20px rgba(124, 58, 237, 0.45)",
     "--shadow-coin": "0 0 14px rgba(245, 158, 11, 0.3)",
   },
@@ -81,6 +93,12 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     "--vida-text-muted": "#5b5570",
     "--vida-text-dim": "#9a93b0",
     "--vida-border": "#e5e6e6",
+    "--vida-success": "#10b981",
+    "--vida-danger": "#ef4444",
+    "--vida-radius-sm": "6px",
+    "--vida-radius-md": "12px",
+    "--vida-radius-lg": "20px",
+    "--vida-radius-full": "9999px",
     "--shadow-glow": "0 0 16px rgba(124, 58, 237, 0.2)",
     "--shadow-coin": "0 0 14px rgba(245, 158, 11, 0.3)",
   },
@@ -98,6 +116,12 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     "--vida-text-muted": "#7a5b4c",
     "--vida-text-dim": "#a98a78",
     "--vida-border": "#e5d5ca",
+    "--vida-success": "#10b981",
+    "--vida-danger": "#ef4444",
+    "--vida-radius-sm": "6px",
+    "--vida-radius-md": "12px",
+    "--vida-radius-lg": "20px",
+    "--vida-radius-full": "9999px",
     "--shadow-glow": "0 0 16px rgba(101, 195, 243, 0.3)",
     "--shadow-coin": "0 0 14px rgba(238, 175, 58, 0.35)",
   },
@@ -115,6 +139,12 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     "--vida-text-muted": "#b0b0c0",
     "--vida-text-dim": "#7a7a8c",
     "--vida-border": "#2a2a3a",
+    "--vida-success": "#10b981",
+    "--vida-danger": "#ef4444",
+    "--vida-radius-sm": "6px",
+    "--vida-radius-md": "12px",
+    "--vida-radius-lg": "20px",
+    "--vida-radius-full": "9999px",
     "--shadow-glow": "0 0 22px rgba(255, 117, 151, 0.5)",
     "--shadow-coin": "0 0 16px rgba(0, 216, 214, 0.45)",
   },
@@ -132,6 +162,12 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     "--vida-text-muted": "#e0a8c8",
     "--vida-text-dim": "#b07a98",
     "--vida-border": "#5a2e50",
+    "--vida-success": "#10b981",
+    "--vida-danger": "#ef4444",
+    "--vida-radius-sm": "6px",
+    "--vida-radius-md": "12px",
+    "--vida-radius-lg": "20px",
+    "--vida-radius-full": "9999px",
     "--shadow-glow": "0 0 20px rgba(244, 114, 182, 0.4)",
     "--shadow-coin": "0 0 16px rgba(251, 146, 60, 0.45)",
   },
@@ -149,6 +185,12 @@ export const THEMES: Record<ThemeName, ThemeTokens> = {
     "--vida-text-muted": "#9a5b68",
     "--vida-text-dim": "#b07a88",
     "--vida-border": "#e7b8cb",
+    "--vida-success": "#10b981",
+    "--vida-danger": "#ef4444",
+    "--vida-radius-sm": "6px",
+    "--vida-radius-md": "12px",
+    "--vida-radius-lg": "20px",
+    "--vida-radius-full": "9999px",
     "--shadow-glow": "0 0 16px rgba(233, 109, 123, 0.35)",
     "--shadow-coin": "0 0 14px rgba(244, 198, 182, 0.45)",
   },

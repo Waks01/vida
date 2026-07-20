@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { Text } from "react-native";
 import { router } from "expo-router";
 
+import { AuthShell } from "../../src/shared/components/AuthShell";
 import { VButton } from "../../src/shared/components/VButton";
 import { VInput } from "../../src/shared/components/VInput";
 import { useAuth } from "../../src/features/auth/hooks/useAuth";
@@ -21,15 +22,27 @@ export default function SignUp() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: tokens["--vida-bg"], padding: 24, justifyContent: "center" }}>
-      <Text style={{ color: tokens["--vida-text-primary"], fontSize: 26, fontWeight: "800", marginBottom: 24 }}>
-        Create account
+    <AuthShell
+      step="STEP 1 OF 2"
+      title="Create your account"
+      subtitle="Sign up with your email."
+      footer={
+        <Text style={{ color: tokens["--vida-text-muted"], fontSize: 12 }}>
+          Already have an account?{" "}
+          <Text style={{ color: tokens["--vida-primary"], fontWeight: "700" }} onPress={() => router.push("/login")}>
+            Log in
+          </Text>
+        </Text>
+      }
+    >
+      <VInput label="Email Address" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder="you@example.com" />
+      <VInput label="Password" secureTextEntry value={password} onChangeText={setPassword} placeholder="••••••••" />
+      {error ? <Text style={{ color: tokens["--vida-danger"], fontSize: 12 }}>{error}</Text> : null}
+      <VButton title="Continue →" loading={isLoading} fullWidth onPress={onSubmit} style={{ marginTop: 8 }} />
+      <Text style={{ color: tokens["--vida-text-dim"], fontSize: 11, textAlign: "center" }}>
+        By continuing you agree to Terms & Privacy
       </Text>
-      <VInput label="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder="you@email.com" />
-      <VInput label="Password" secureTextEntry value={password} onChangeText={setPassword} placeholder="min 8 characters" />
-      {error ? <Text style={{ color: "#ef4444", marginBottom: 8 }}>{error}</Text> : null}
-      <VButton title="Send OTP" loading={isLoading} fullWidth onPress={onSubmit} />
-      {devOtp ? <Text style={{ color: tokens["--vida-text-dim"], marginTop: 12, textAlign: "center" }}>Dev OTP: {devOtp}</Text> : null}
-    </ScrollView>
+      {devOtp ? <Text style={{ color: tokens["--vida-text-dim"], fontSize: 12, textAlign: "center" }}>Dev OTP: {devOtp}</Text> : null}
+    </AuthShell>
   );
 }

@@ -1,10 +1,10 @@
 import { Redirect, Stack } from "expo-router";
 import { useAuth } from "../../src/features/auth/hooks/useAuth";
 
-/** Auth guard: unauthenticated users fall back to PIN login. */
+/** Auth guard: unauthenticated users fall back to signup. */
 export default function AuthenticatedLayout() {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <Redirect href="/(unauthenticated)/pin-login" />;
+  if (!isAuthenticated) return <Redirect href="/(unauthenticated)/signup" />;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
