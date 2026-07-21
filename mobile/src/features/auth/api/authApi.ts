@@ -15,7 +15,7 @@ import type {
  * backend/src/app/api/v1/endpoints/auth.py. No business logic here.
  */
 export const authApi = {
-  async signUp(body: SignUpRequest): Promise<{ dev_otp?: string }> {
+  async signUp(body: SignUpRequest): Promise<{ message: string }> {
     const { data } = await httpClient.post("/auth/signup", body);
     return data;
   },

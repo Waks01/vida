@@ -14,6 +14,7 @@ export function VHeader({ title, showBack = false }: { title: string; showBack?:
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: 12,
+        marginTop: 18,
         borderBottomWidth: 1,
         borderBottomColor: tokens["--vida-border"],
       }}

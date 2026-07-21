@@ -10,7 +10,15 @@ export default function AuthenticatedLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="series/[id]" />
-      <Stack.Screen name="player" />
+      {/* Player is a full-screen modal so the swipe-paging math
+          matches the actual window height — the (tabs) tab bar
+          stays mounted underneath otherwise, which makes the
+          FlatList pages misalign by ~80px and the swipe never
+          quite lands on the next episode. */}
+      <Stack.Screen
+        name="player"
+        options={{ presentation: "fullScreenModal", animation: "fade" }}
+      />
       <Stack.Screen name="settings" />
       <Stack.Screen name="pin-setup" />
       <Stack.Screen name="creator/apply" />

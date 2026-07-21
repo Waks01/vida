@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { walletApi } from "../api/walletApi";
 import { queryKeys } from "../../../core/api/queryClient";
+import { hasCheckedInToday, setLastCheckInDate } from "../../../core/storage/mmkv";
 
 export function useWallet() {
   const qc = useQueryClient();
@@ -26,7 +27,9 @@ export function useWallet() {
   const checkIn = useMutation({
     mutationFn: walletApi.dailyCheckIn,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["wallet", "balance"] });
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      setLastCheckInDate(todayStr);
       qc.invalidateQueries({ queryKey: queryKeys.coinHistory(1) });
     },
   });
@@ -37,6 +40,7 @@ export function useWallet() {
     transactions: transactions.data ?? [],
     isLoading: balance.isLoading || packs.isLoading,
     checkIn,
+    hasCheckedInToday: hasCheckedInToday(),
     refetch: () => balance.refetch(),
   };
 }

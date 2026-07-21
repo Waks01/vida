@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Alert, FlatList, Text, TextInput, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Alert, ScrollView, Text, TextInput, View } from "react-native";
+import { LinearGradient } from "../../../src/shared/components/VLinearGradient";
 import { router } from "expo-router";
 
 import { VButton } from "../../../src/shared/components/VButton";
@@ -54,7 +54,7 @@ function EarnRow({
 
 export default function WalletScreen() {
   const { tokens } = useTheme();
-  const { balance, packs, transactions, checkIn } = useWallet();
+  const { balance, packs, transactions, checkIn, hasCheckedInToday } = useWallet();
   const { watchAd, isLoading: adLoading } = useAdReward();
   const [amount, setAmount] = useState("");
   const [buying, setBuying] = useState(false);
@@ -99,7 +99,7 @@ export default function WalletScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: tokens["--vida-bg"] }}>
+    <ScrollView style={{ flex: 1, backgroundColor: tokens["--vida-bg"] }} contentContainerStyle={{ paddingBottom: 24 }}>
       <Text style={{ color: tokens["--vida-text-primary"], fontSize: 22, fontWeight: "800", padding: 16 }}>Wallet</Text>
 
       {/* Balance card */}
@@ -127,11 +127,15 @@ export default function WalletScreen() {
       <Text style={{ color: tokens["--vida-text-primary"], fontSize: 15, fontWeight: "700", paddingHorizontal: 16, marginBottom: 8 }}>
         Earn Free Coins
       </Text>
-      <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-        <EarnRow icon="play-circle" title="Watch Rewarded Ad" subtitle="30s → +20 coins" actionLabel="Watch" variant="primary" onPress={handleAd} loading={adLoading} />
-        <EarnRow icon="calendar" title="Daily Check-in" subtitle="Available! → +100 coins" actionLabel="Claim" variant="coin" onPress={handleCheckIn} loading={checkIn.isPending} />
-        <EarnRow icon="people" title="Refer a Friend" subtitle="They join → +50 coins" actionLabel="Share" variant="primary" onPress={handleVip} />
-      </View>
+  <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+    <EarnRow icon="play-circle" title="Watch Rewarded Ad" subtitle="30s → +20 coins" actionLabel="Watch" variant="primary" onPress={handleAd} loading={adLoading} />
+    {hasCheckedInToday ? (
+      <EarnRow icon="calendar" title="Daily Check-in" subtitle="Claimed today! Come back tomorrow" actionLabel="Claimed" variant="coin" onPress={() => {}} loading={false} />
+    ) : (
+      <EarnRow icon="calendar" title="Daily Check-in" subtitle="Available! → +100 coins" actionLabel="Claim" variant="coin" onPress={handleCheckIn} loading={checkIn.isPending} />
+    )}
+    <EarnRow icon="people" title="Refer a Friend" subtitle="They join → +50 coins" actionLabel="Share" variant="primary" onPress={handleVip} />
+  </View>
 
       {/* Buy coins */}
       <Text style={{ color: tokens["--vida-text-muted"], paddingHorizontal: 16, marginBottom: 12 }}>
@@ -171,32 +175,29 @@ export default function WalletScreen() {
       <Text style={{ color: tokens["--vida-text-primary"], fontSize: 16, fontWeight: "700", paddingHorizontal: 16, marginBottom: 8 }}>
         Coin history
       </Text>
-      <FlatList
-        data={transactions}
-        keyExtractor={(item) => item.id}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-        renderItem={({ item }) => (
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              paddingVertical: 10,
-              borderBottomWidth: 1,
-              borderBottomColor: tokens["--vida-border"],
-            }}
-          >
-            <Text style={{ color: tokens["--vida-text-primary"], flex: 1 }}>{item.source}</Text>
-            <Text style={{ color: item.amount >= 0 ? tokens["--vida-accent"] : tokens["--vida-text-primary"], fontWeight: "600" }}>
-              {item.amount >= 0 ? "+" : ""}
-              {item.amount}
-            </Text>
-          </View>
-        )}
-        ListEmptyComponent={
+      <View style={{ paddingHorizontal: 16, paddingBottom: 24 }}>
+        {transactions.length === 0 ? (
           <Text style={{ color: tokens["--vida-text-muted"], textAlign: "center", marginTop: 12 }}>No transactions yet</Text>
-        }
-      />
-    </View>
+        ) : (
+          transactions.map((item) => (
+            <View
+              key={item.id}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingVertical: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: tokens["--vida-border"],
+              }}
+            >
+              <Text style={{ color: tokens["--vida-text-primary"], flex: 1 }}>{item.source}</Text>
+              <Text style={{ color: item.amount >= 0 ? tokens["--vida-accent"] : tokens["--vida-text-primary"], fontWeight: "600" }}>
+                {item.amount >= 0 ? "+" : ""}{item.amount}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+    </ScrollView>
   );
 }

@@ -30,7 +30,6 @@ const SIZES: Record<Size, { h: number; fs: number; px: number }> = {
   lg: { h: 52, fs: 17, px: 22 },
 };
 
-/** Primary action button. Maps to vida-design.html §2 "Button". */
 export function VButton({
   title,
   variant = "primary",
@@ -56,6 +55,9 @@ export function VButton({
             ? tokens["--vida-surface-2"]
             : "transparent";
 
+  const borderColor =
+    variant === "ghost" ? tokens["--vida-primary"] : "transparent";
+
   const fg =
     variant === "coin"
       ? "#1a1a1a"
@@ -67,16 +69,23 @@ export function VButton({
     <Pressable
       {...rest}
       disabled={disabled || loading}
-      style={[
+      android_ripple={{
+        color: variant === "primary" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)",
+        borderless: false,
+      }}
+      style={({ pressed }) => [
         {
           height: s.h,
           paddingHorizontal: s.px,
           borderRadius: 12,
           backgroundColor: bg,
-          opacity: disabled ? 0.5 : 1,
           alignItems: "center",
           justifyContent: "center",
           width: fullWidth ? "100%" : undefined,
+          opacity: disabled || loading ? 0.5 : pressed ? 0.85 : 1,
+          borderWidth: variant === "ghost" ? 1.5 : 0,
+          borderColor,
+          transform: [{ scale: pressed && !disabled && !loading ? 0.97 : 1 }],
         },
         style,
       ]}

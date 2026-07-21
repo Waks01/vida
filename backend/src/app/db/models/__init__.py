@@ -27,6 +27,7 @@ from app.core.enums import (
     PaymentProvider,
     PaymentStatus,
     PayoutStatus,
+    SeriesCategory,
     SeriesStatus,
     SubscriptionStatus,
     ThemePreference,
@@ -61,6 +62,12 @@ class User(Base):
     creator_profile: Mapped[Optional["Creator"]] = relationship(
         back_populates="user", uselist=False
     )
+    watch_history: Mapped[list["WatchHistory"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    watchlist: Mapped[list["Watchlist"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Series(Base):
@@ -78,6 +85,11 @@ class Series(Base):
         SQLEnum(SeriesStatus, name="series_status"),
         nullable=False,
         default=SeriesStatus.PENDING.value,
+    )
+    category: Mapped[str | None] = mapped_column(
+        SQLEnum(SeriesCategory, name="series_category"),
+        nullable=True,
+        index=True,
     )
     total_views: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -232,3 +244,92 @@ class Payout(Base):
     failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     processed_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class WatchHistory(Base):
+    """One row per (user, series) — the user's most recent watch session
+    for that series. The home's Resume rail reads the 4 most recent rows
+    ordered by `last_watched_at` desc.
+
+    We collapse by series (not episode) so the Resume rail can show
+    "continue from episode N" — the user lands back on the show, not on
+    a specific episode. The watched episode is still recorded so we can
+    resume mid-episode in the player.
+    """
+
+    __tablename__ = "watch_history"
+    __table_args__ = (
+        UniqueConstraint("user_id", "series_id", name="uq_watch_user_series"),
+    )
+
+    id: Mapped[PythonUUID] = mapped_column(SAUUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[PythonUUID] = mapped_column(
+        SAUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
+    )
+    series_id: Mapped[PythonUUID] = mapped_column(
+        SAUUID(as_uuid=True), ForeignKey("series.id"), nullable=False, index=True
+    )
+    episode_id: Mapped[PythonUUID | None] = mapped_column(
+        SAUUID(as_uuid=True), ForeignKey("episodes.id"), nullable=True
+    )
+    # 0..1 progress through the current episode.
+    progress: Mapped[float] = mapped_column(nullable=False, default=0.0)
+    last_watched_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+    user: Mapped[User] = relationship(back_populates="watch_history")
+    series: Mapped["Series"] = relationship()
+    episode: Mapped[Optional["Episode"]] = relationship()
+
+
+class Watchlist(Base):
+    """One row per (user, series) — the user's saved series. Tapping
+    the bookmark on the detail page inserts a row; tapping again
+    removes it. The list is free (no coin cost) and idempotent
+    (re-saving an already-saved series is a no-op).
+    """
+
+    __tablename__ = "watchlist"
+    __table_args__ = (
+        UniqueConstraint("user_id", "series_id", name="uq_watchlist_user_series"),
+    )
+
+    id: Mapped[PythonUUID] = mapped_column(SAUUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[PythonUUID] = mapped_column(
+        SAUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    series_id: Mapped[PythonUUID] = mapped_column(
+        SAUUID(as_uuid=True), ForeignKey("series.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    added_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+    user: Mapped[User] = relationship(back_populates="watchlist")
+    series: Mapped["Series"] = relationship()
+
+
+class EpisodeLike(Base):
+    """One row per (user, episode) — the user's liked episodes. Tapping
+    the heart in the player inserts a row; tapping again removes it.
+    Idempotent at the unique constraint, no coin cost.
+    """
+
+    __tablename__ = "episode_likes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "episode_id", name="uq_like_user_episode"),
+    )
+
+    id: Mapped[PythonUUID] = mapped_column(SAUUID(as_uuid=True), primary_key=True, default=_uuid)
+    user_id: Mapped[PythonUUID] = mapped_column(
+        SAUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    episode_id: Mapped[PythonUUID] = mapped_column(
+        SAUUID(as_uuid=True), ForeignKey("episodes.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+    user: Mapped[User] = relationship()

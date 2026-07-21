@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -17,6 +18,7 @@ from app.security import (
 )
 
 settings = get_settings()
+logger = logging.getLogger("vida.auth")
 
 # Redis client for OTP store (production-safe, survives restarts, scales across workers).
 _redis: redis.Redis | None = None
@@ -77,12 +79,23 @@ async def signup(session: AsyncSession, email: str, password: str) -> dict:
     else:
         # Fallback: in-memory with TTL (local dev only).
         _otp_store[email.lower()] = (otp, datetime.now(UTC))
-    # In local environment surface the OTP directly so flows are exercisable
-    # without email delivery. In staging/production the OTP is emailed only.
-    if settings.is_production or settings.environment == "staging":
-        await _send_otp_email(email, otp)
-        return {"message": "OTP sent to email"}
-    return {"message": "OTP generated", "dev_otp": otp}
+    # Store OTP and send via email. Always attempt delivery when API key is present.
+    otp = _generate_otp()
+    r = _get_redis()
+    key = f"vida:otp:{email.lower()}"
+    if r:
+        r.setex(key, settings.otp_ttl_seconds, otp)
+    else:
+        _otp_store[email.lower()] = (otp, datetime.now(UTC))
+
+    if settings.resend_api_key:
+        try:
+            await _send_otp_email(email, otp)
+        except Exception as e:
+            logger.error("signup OTP email failed to %s: %s", email, e)
+            raise AuthError("Failed to send verification email") from e
+
+    return {"message": "OTP sent to email"}
 
 
 async def verify_otp(session: AsyncSession, email: str, code: str) -> tuple[str, str]:

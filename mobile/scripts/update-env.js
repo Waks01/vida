@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Auto-detect local IP and update .env file
- * This runs automatically before starting the dev server
+ * Auto-detect local IP and update .env file.
+ * Skips virtual/docker/WSL adapters so the phone can actually reach the backend.
  */
 
 import os from "os";
@@ -12,20 +12,46 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const VIRTUAL_PREFIXES = [
+  "docker",
+  "veth",
+  "br-",
+  "virbr",
+  "vnet",
+  "vboxnet",
+  "vmnet",
+  "wsl",
+  "hyper-v",
+  "virtual",
+  "tap",
+  "tun",
+];
+
+function isVirtual(name) {
+  const lower = name.toLowerCase();
+  return VIRTUAL_PREFIXES.some((p) => lower.includes(p));
+}
+
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
 
-  // Try to find a non-internal IPv4 address
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
-      // Skip internal (loopback) and non-IPv4 addresses
-      if (iface.family === "IPv4" && !iface.internal) {
-        return iface.address;
+  // Prefer interfaces that look like real LAN adapters (Wi-Fi / Ethernet)
+  const candidates = [];
+  for (const [name, addrs] of Object.entries(interfaces)) {
+    for (const iface of addrs) {
+      if (iface.family === "IPv4" && !iface.internal && !isVirtual(name)) {
+        candidates.push({ name, address: iface.address });
       }
     }
   }
 
-  return null;
+  if (candidates.length === 0) return null;
+
+  // Prefer Wi-Fi / Ethernet over anything else
+  const preferred = candidates.find(
+    (c) => /wi-?fi|wlan|ethernet|eth\d/.test(c.name.toLowerCase())
+  );
+  return preferred ? preferred.address : candidates[0].address;
 }
 
 function updateEnvFile() {

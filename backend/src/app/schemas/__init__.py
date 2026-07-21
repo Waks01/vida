@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.core.enums import (
     CoinSource,
@@ -9,9 +10,12 @@ from app.core.enums import (
     EpisodeStatus,
     PaymentProvider,
     PaymentStatus,
+    SeriesCategory,
     SeriesStatus,
     ThemePreference,
 )
+
+DEFAULT_THUMBNAIL = "https://peach.blender.org/wp-content/uploads/poster_bunny_big.jpg"
 
 
 # ─── Auth: email + OTP + PIN ───
@@ -77,6 +81,11 @@ class EpisodePublic(BaseModel):
     source: EpisodeSource = EpisodeSource.STREAM
     status: EpisodeStatus
 
+    @field_validator("thumbnail_url", mode="before")
+    @classmethod
+    def _default_episode_thumbnail(cls, v: Any) -> str:
+        return v or DEFAULT_THUMBNAIL
+
 
 class EpisodeImportRequest(BaseModel):
     """Import a third-party (external) episode into a series.
@@ -105,8 +114,14 @@ class SeriesPublic(BaseModel):
     genre_id: int | None = None
     thumbnail_url: str | None = None
     status: SeriesStatus
+    category: SeriesCategory | None = None
     total_views: int = 0
     episodes: list[EpisodePublic] = []
+
+    @field_validator("thumbnail_url", mode="before")
+    @classmethod
+    def _default_series_thumbnail(cls, v: Any) -> str:
+        return v or DEFAULT_THUMBNAIL
 
 
 # ─── Coins / wallet ───
@@ -305,4 +320,52 @@ class CoinTransactionPage(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+# ─── Watch history (Resume rail) ───
+class WatchHistoryEntry(BaseModel):
+    """One series the user has started. The Resume rail renders up to 4
+    of these in last-watched order. `progress` is 0..1 within the
+    current episode so the wide card can draw a real progress bar."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    series_id: UUID
+    series_title: str
+    series_thumbnail_url: str | None = None
+    episode_id: UUID | None = None
+    episode_number: int | None = None
+    episode_duration_seconds: int | None = None
+    progress: float = 0.0
+    last_watched_at: datetime
+
+
+class WatchHistoryResponse(BaseModel):
+    items: list[WatchHistoryEntry]
+
+
+# ─── Watchlist (Saved series) ───
+class WatchlistAddRequest(BaseModel):
+    """Add a series to the user's watchlist. Idempotent: re-adding
+    returns the existing row with 201, not 409."""
+
+    series_id: UUID
+
+
+class WatchlistEntry(BaseModel):
+    """One row from GET /users/me/watchlist. Joined to Series so the
+    list screen can render title + thumbnail without a second query."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    series_id: UUID
+    series_title: str
+    series_thumbnail_url: str | None = None
+    added_at: datetime
+
+
+class WatchlistResponse(BaseModel):
+    items: list[WatchlistEntry]
 

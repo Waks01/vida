@@ -10,6 +10,7 @@ export const StorageKeys = {
   theme: "theme_preference",
   onboarded: "onboarded",
   lastFeedCursor: "last_feed_cursor",
+  lastCheckInDate: "last_check_in_date",
 } as const;
 
 export function getStoredTheme(): string | undefined {
@@ -18,4 +19,20 @@ export function getStoredTheme(): string | undefined {
 
 export function setStoredTheme(theme: string): void {
   storage.set(StorageKeys.theme, theme);
+}
+
+export function getLastCheckInDate(): string | undefined {
+  return storage.getString(StorageKeys.lastCheckInDate);
+}
+
+export function setLastCheckInDate(date: string): void {
+  storage.set(StorageKeys.lastCheckInDate, date);
+}
+
+export function hasCheckedInToday(): boolean {
+  const lastDate = getLastCheckInDate();
+  if (!lastDate) return false;
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  return lastDate === todayStr;
 }

@@ -46,7 +46,8 @@
           "iosAppId": "ca-app-pub-3898064484524772~7285646968"
         }
       ],
-      "react-native-video"
+      "react-native-video",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

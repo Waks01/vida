@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -7,17 +7,33 @@ import { VButton } from "../../src/shared/components/VButton";
 import { VPinField } from "../../src/shared/components/VPinField";
 import { useAuth } from "../../src/features/auth/hooks/useAuth";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { validateOtpCode, type ValidationErrors } from "../../src/features/auth/utils/validation";
 
 export default function VerifyOtp() {
   const { tokens } = useTheme();
   const { verifyOtp, isLoading, error } = useAuth();
   const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState("");
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const handleCodeChange = useCallback((text: string) => {
+    setCode(text);
+    setErrors((prev) => ({ ...prev, code: validateOtpCode(text) }));
+  }, []);
 
   async function onSubmit() {
+    setApiError(null);
+    const codeErr = validateOtpCode(code);
+    setErrors({ code: codeErr });
+    if (codeErr) return;
     if (!email) return;
-    await verifyOtp(email, code);
-    router.replace("/(authenticated)/(tabs)");
+    try {
+      await verifyOtp(email, code.trim());
+      router.replace("/(authenticated)/(tabs)");
+    } catch (e) {
+      setApiError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    }
   }
 
   return (
@@ -31,9 +47,13 @@ export default function VerifyOtp() {
         </Text>
       }
     >
-      <VPinField length={6} secure={false} onComplete={setCode} />
-      {error ? <Text style={{ color: tokens["--vida-danger"], fontSize: 12 }}>{error}</Text> : null}
-      <VButton title="Verify →" loading={isLoading} fullWidth onPress={onSubmit} />
+      <VPinField length={6} secure={false} onComplete={handleCodeChange} />
+      {(apiError || errors.code) && (
+        <Text style={{ color: tokens["--vida-danger"], fontSize: 12 }}>
+          {apiError || errors.code}
+        </Text>
+      )}
+      <VButton title="Verify →" loading={isLoading} fullWidth onPress={onSubmit} disabled={code.length < 6} />
     </AuthShell>
   );
 }

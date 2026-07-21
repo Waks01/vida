@@ -32,8 +32,7 @@ export const useAuthStore = create<AuthState>()(
       async signUp(email, password) {
         set({ isLoading: true, error: null });
         try {
-          const res = await authApi.signUp({ email, password });
-          return res.dev_otp;
+          await authApi.signUp({ email, password });
         } catch (e) {
           set({ error: (e as Error).message });
           throw e;

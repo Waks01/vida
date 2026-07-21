@@ -1,0 +1,2130 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vida — Cinematic v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ==========================================================================
+   VIDA — Cinematic v2
+   --------------------------------------------------------------------------
+   A redesign of docs/vida-design.html. The risk we took: instead of
+   documenting every screen on one flat horizontal scroll, the page itself
+   is a vertical scroll that walks the user through the app. Each phone
+   frame lives in its own full-bleed band.
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Signature palette — every color in the design comes from here */
+  --ink:    #0B0712;   /* deep cinematic near-black, slightly violet */
+  --velvet: #1A1426;   /* secondary surface */
+  --velvet-2: #221A30; /* raised surface */
+  --line:   #2A2138;   /* hairline divider */
+  --iris:   #7C3AED;   /* primary violet */
+  --iris-2: #A78BFA;   /* light iris, for text on dark */
+  --ember:  #F59E0B;   /* the only warm color — reserved for coins */
+  --ember-2:#D97706;
+  --bone:   #E8E4EE;   /* primary text, off-white with violet undertone */
+  --ash:    #6B6478;   /* secondary text */
+  --ash-2:  #4A4357;
+  --jade:   #10B981;
+  --crimson:#EF4444;
+
+  /* Radii */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* Glow */
+  --glow-iris: 0 0 24px rgba(124, 58, 237, 0.35);
+  --glow-ember:0 0 20px rgba(245, 158, 11, 0.40);
+}
+
+/* 6 themes — each is a complete skin. Defaults to dark. */
+[data-theme="dark"] { --ink: #0B0712; --velvet: #1A1426; --velvet-2: #221A30; --line: #2A2138; --bone: #E8E4EE; --ash: #6B6478; --ash-2: #4A4357; --iris-2: #A78BFA; }
+[data-theme="light"] { --ink: #FFFFFF; --velvet: #F6F2F8; --velvet-2: #FFFFFF; --line: #E6DEEC; --bone: #1F1B2A; --ash: #6B6478; --ash-2: #B5AEC0; --iris-2: #6D28D9; }
+[data-theme="cupcake"] { --ink: #FAF7F5; --velvet: #F2E9E3; --velvet-2: #FFFFFF; --line: #E5D5CA; --bone: #41291D; --ash: #7A5B4C; --ash-2: #A98A78; --iris-2: #65C3F3; }
+[data-theme="cyberpunk"] { --ink: #0A0A0F; --velvet: #18181F; --velvet-2: #232330; --line: #2A2A3A; --bone: #F4F4F8; --ash: #B0B0C0; --ash-2: #7A7A8C; --iris-2: #FF7597; }
+[data-theme="sunset"] { --ink: #1A0E1A; --velvet: #2A1626; --velvet-2: #3A2034; --line: #5A2E50; --bone: #FFEAF6; --ash: #E0A8C8; --ash-2: #B07A98; --iris-2: #F472B6; }
+[data-theme="valentine"] { --ink: #FEE7EF; --velvet: #F6D6E3; --velvet-2: #FFFFFF; --line: #E7B8CB; --bone: #451526; --ash: #9A5B68; --ash-2: #B07A88; --iris-2: #E96D7B; }
+
+html, body {
+  background: var(--ink);
+  color: var(--bone);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body { overflow-x: hidden; }
+
+/* Type signatures */
+.mono { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-feature-settings: 'tnum' 1; }
+.eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--iris-2);
+}
+.display { font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+
+/* ========================================================================
+   Top bar — minimal, not a tab nav like v1
+   ======================================================================== */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 28px;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .mark {
+  font-weight: 800; font-size: 16px; letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--iris-2), var(--ember));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.topbar .crumbs { display: flex; gap: 14px; font-size: 12px; color: var(--ash); }
+.topbar .crumbs span.active { color: var(--bone); }
+.topbar .spacer { flex: 1; }
+.topbar .badge-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: var(--r-pill);
+  background: var(--velvet-2); border: 1px solid var(--line);
+  font-size: 11px; color: var(--bone);
+}
+.topbar .theme-pip { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line); cursor: pointer; transition: all .15s; }
+.topbar .theme-pip[data-on="true"] { border-color: var(--iris); box-shadow: 0 0 0 2px var(--ink), 0 0 0 3px var(--iris); }
+.theme-pip-dark { background: #0B0712; }
+.theme-pip-light { background: #FFFFFF; }
+.theme-pip-cupcake { background: #65C3F3; }
+.theme-pip-cyberpunk { background: #FF7597; }
+.theme-pip-sunset { background: #F472B6; }
+.theme-pip-valentine { background: #E96D7B; }
+
+/* ========================================================================
+   HERO BAND — the opening thesis
+   ======================================================================== */
+.hero {
+  min-height: 92vh; padding: 140px 28px 80px;
+  display: grid; grid-template-columns: 1.4fr 1fr; gap: 60px; align-items: center;
+  background:
+    radial-gradient(60% 80% at 80% 20%, rgba(124, 58, 237, 0.18), transparent 60%),
+    radial-gradient(50% 70% at 10% 80%, rgba(245, 158, 11, 0.10), transparent 60%),
+    var(--ink);
+  position: relative; overflow: hidden;
+}
+.hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(circle at 50% 50%, black, transparent 70%);
+  opacity: 0.4;
+}
+.hero-text { position: relative; z-index: 1; }
+.hero-text .eyebrow { margin-bottom: 18px; }
+.hero-text h1 {
+  font-size: clamp(48px, 7vw, 88px);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 0.95;
+  color: var(--bone);
+}
+.hero-text h1 .gradient {
+  background: linear-gradient(135deg, var(--iris-2) 0%, var(--ember) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  background-size: 200% 200%;
+  animation: drift 8s ease-in-out infinite alternate;
+}
+@keyframes drift { to { background-position: 100% 100%; } }
+.hero-text p.lede {
+  margin-top: 22px; font-size: 17px; line-height: 1.55; color: var(--ash);
+  max-width: 480px;
+}
+.hero-text .meta {
+  margin-top: 36px; display: flex; gap: 28px; flex-wrap: wrap;
+  font-size: 12px; color: var(--ash);
+}
+.hero-text .meta strong { display: block; color: var(--bone); font-size: 20px; font-weight: 800; margin-top: 4px; }
+.hero-text .meta strong.mono { font-family: 'JetBrains Mono', monospace; }
+
+.hero-side {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.hero-side .tile {
+  aspect-ratio: 2/3; border-radius: var(--r-md); overflow: hidden;
+  position: relative; background: var(--velvet);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px;
+  border: 1px solid var(--line);
+}
+.hero-side .tile.tall { grid-row: span 2; }
+.hero-side .tile::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.85) 100%);
+}
+.hero-side .tile .meta {
+  position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 1;
+  font-size: 10px;
+}
+.hero-side .tile .meta .t { color: white; font-weight: 600; font-size: 11px; line-height: 1.2; }
+.hero-side .tile .meta .v { color: rgba(255,255,255,0.65); font-family: 'JetBrains Mono', monospace; font-size: 9px; margin-top: 2px; }
+
+/* ========================================================================
+   Generic band — section container for content
+   ======================================================================== */
+.band {
+  padding: 100px 28px;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+.band.tight { padding: 60px 28px; }
+.band-velvet { background: var(--velvet); }
+.band-ink { background: var(--ink); }
+.band .eyebrow { margin-bottom: 14px; }
+.band h2 {
+  font-size: clamp(32px, 4vw, 48px); font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1.05; color: var(--bone);
+  max-width: 720px;
+}
+.band .lede {
+  margin-top: 16px; color: var(--ash); font-size: 15px;
+  max-width: 600px; line-height: 1.55;
+}
+
+/* ========================================================================
+   Component library band — shows our vocabulary, not v1's flat card grid
+   ======================================================================== */
+.components {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px; margin-top: 48px;
+}
+.comp {
+  background: var(--velvet-2); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.comp .name { font-size: 11px; font-weight: 700; color: var(--iris-2); letter-spacing: 0.12em; text-transform: uppercase; }
+.comp .desc { font-size: 11px; color: var(--ash); line-height: 1.4; }
+.comp .demo { min-height: 100px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 22px; border-radius: var(--r-pill);
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px;
+  border: none; cursor: pointer; transition: transform .1s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--iris); color: white; box-shadow: var(--glow-iris); }
+.btn-ember { background: var(--ember); color: #1A1426; box-shadow: var(--glow-ember); }
+.btn-ghost { background: transparent; color: var(--bone); border: 1px solid var(--line); }
+.btn-sm { padding: 8px 16px; font-size: 12px; }
+.btn-lg { padding: 16px 28px; font-size: 16px; }
+
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: var(--r-pill);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+}
+.badge-new { background: color-mix(in srgb, var(--jade) 18%, transparent); color: var(--jade); }
+.badge-vip { background: color-mix(in srgb, var(--iris) 20%, transparent); color: var(--iris-2); }
+.badge-hot { background: color-mix(in srgb, var(--ember) 20%, transparent); color: var(--ember); }
+.badge-excl { background: color-mix(in srgb, var(--crimson) 18%, transparent); color: var(--crimson); }
+.badge-coin { background: color-mix(in srgb, var(--ember) 14%, transparent); color: var(--ember); }
+.badge-mono { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; }
+
+/* Coin counter chip */
+.coin-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: var(--r-pill);
+  background: var(--velvet-2); border: 1px solid var(--line);
+  font-size: 12px; font-weight: 600;
+}
+.coin-chip .amount { font-family: 'JetBrains Mono', monospace; color: var(--ember); }
+.coin-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 6px var(--ember); }
+
+/* ========================================================================
+   THE SIGNATURE — Phone frames
+   ======================================================================== */
+.phone {
+  width: 320px; height: 660px; flex-shrink: 0;
+  background: var(--ink);
+  border-radius: 36px; padding: 10px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.6),
+    0 0 0 1px color-mix(in srgb, var(--line) 100%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  position: relative;
+}
+.phone-screen {
+  width: 100%; height: 100%; background: var(--ink);
+  border-radius: 28px; overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
+}
+.phone-notch {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 110px; height: 22px; background: #000; border-radius: 0 0 14px 14px; z-index: 50;
+}
+.status-bar {
+  position: relative; z-index: 5;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 24px 4px; font-size: 10px; font-weight: 600;
+  color: var(--bone);
+}
+.status-bar .dots { display: flex; gap: 3px; }
+.status-bar .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--bone); }
+.status-bar .dot.dim { background: var(--ash); }
+
+.screen-frame {
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  flex-shrink: 0;
+}
+.screen-frame .label {
+  text-align: center; max-width: 320px;
+}
+.screen-frame .label .no { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ash-2); letter-spacing: 0.1em; }
+.screen-frame .label .name { font-size: 14px; font-weight: 700; color: var(--bone); margin-top: 4px; }
+.screen-frame .label .desc { font-size: 11px; color: var(--ash); margin-top: 4px; line-height: 1.4; }
+
+/* ========================================================================
+   Phones band — each screen in a full-bleed section
+   ======================================================================== */
+.phones {
+  display: flex; gap: 32px; overflow-x: auto; padding: 60px 28px;
+  scroll-snap-type: x mandatory;
+}
+.phones .screen-frame { scroll-snap-align: start; }
+.phones::-webkit-scrollbar { display: none; }
+
+.band-home {
+  display: flex; gap: 60px; align-items: flex-start; flex-wrap: wrap;
+}
+.home-phones { display: flex; gap: 32px; flex-wrap: wrap; }
+.home-annotations { flex: 1; min-width: 320px; }
+.home-annotations ul { list-style: none; margin-top: 20px; }
+.home-annotations li {
+  display: grid; grid-template-columns: 32px 1fr; gap: 14px;
+  padding: 14px 0; border-top: 1px solid var(--line);
+  font-size: 13px; color: var(--ash);
+}
+.home-annotations li .n {
+  font-family: 'JetBrains Mono', monospace; color: var(--iris-2);
+  font-weight: 700; font-size: 11px;
+}
+.home-annotations li b { color: var(--bone); font-weight: 600; }
+
+/* ========================================================================
+   HOME SCREEN — the centerpiece, fully built
+   ======================================================================== */
+.screen-home {
+  position: relative; flex: 1; background: var(--ink);
+  display: flex; flex-direction: column;
+}
+.sh-topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px 10px;
+}
+.sh-wordmark {
+  font-size: 18px; font-weight: 900; letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--iris-2), var(--ember));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.sh-topbar .coin-chip { margin-left: auto; }
+.sh-topbar .bell {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--velvet-2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--bone);
+}
+.sh-search {
+  margin: 0 14px 12px; padding: 10px 14px;
+  background: var(--velvet-2); border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--ash);
+}
+.sh-hero {
+  margin: 0 14px 16px; aspect-ratio: 16/11; border-radius: var(--r-md);
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #2a0e3a 0%, #6b1d2f 50%, #1a1426 100%);
+  display: flex; align-items: flex-end; padding: 14px;
+}
+.sh-hero::before {
+  content: '👑'; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -55%); font-size: 76px; opacity: 0.6;
+  filter: drop-shadow(0 8px 30px rgba(0,0,0,0.4));
+}
+.sh-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(11, 7, 18, 0.95) 100%);
+}
+.sh-hero .info { position: relative; z-index: 1; flex: 1; }
+.sh-hero .info .tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ember); letter-spacing: 0.1em; }
+.sh-hero .info .title { font-size: 17px; font-weight: 800; color: white; margin-top: 4px; line-height: 1.15; }
+.sh-hero .info .meta { font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+.sh-hero .play-btn {
+  position: relative; z-index: 1;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: white; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: #1a1426; flex-shrink: 0;
+}
+
+.sh-shelf-h {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px; margin: 18px 14px 8px;
+}
+.sh-shelf-h .l { display: flex; align-items: center; gap: 8px; }
+.sh-shelf-h .l h3 { font-size: 13px; font-weight: 700; color: var(--bone); }
+.sh-shelf-h .l .eyebrow { color: var(--iris-2); }
+.sh-shelf-h .see-all { font-size: 10px; color: var(--iris-2); font-weight: 600; }
+
+.sh-row {
+  display: flex; gap: 8px; padding: 0 14px 4px; overflow-x: auto;
+  scrollbar-width: none;
+}
+.sh-row::-webkit-scrollbar { display: none; }
+
+.sh-card {
+  flex-shrink: 0; width: 86px; cursor: pointer;
+}
+.sh-card .poster {
+  position: relative; width: 86px; aspect-ratio: 2/3;
+  border-radius: var(--r-sm); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+.sh-card .poster::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.0) 50%, rgba(0,0,0,0.85) 100%);
+}
+.sh-card .poster .mkt {
+  position: absolute; top: 5px; left: 5px; z-index: 2;
+}
+.sh-card .poster .coin {
+  position: absolute; bottom: 5px; right: 5px; z-index: 2;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  padding: 2px 6px; border-radius: var(--r-pill);
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+  color: var(--ember);
+}
+.sh-card .t { font-size: 10px; font-weight: 600; color: var(--bone); margin-top: 5px; line-height: 1.2;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sh-card .m { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ash); margin-top: 2px; }
+
+/* Continue Watching cards — wider, with progress */
+.sh-row.cw .sh-card { width: 130px; }
+.sh-row.cw .poster { width: 130px; aspect-ratio: 16/10; }
+.sh-row.cw .poster::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; z-index: 3;
+  background: var(--line);
+}
+.sh-row.cw .poster .progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--ember); z-index: 4; border-radius: 0 3px 3px 0; }
+
+/* TOP 10 cards — with rank digit in mono */
+.sh-row.top10 .sh-card { width: 86px; position: relative; }
+.sh-row.top10 .sh-card .rank {
+  position: absolute; top: -4px; left: -4px; z-index: 3;
+  font-family: 'JetBrains Mono', monospace; font-weight: 800;
+  font-size: 36px; color: var(--ember);
+  -webkit-text-stroke: 1.5px var(--ink);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  line-height: 1;
+}
+
+/* Watch & Earn grid — 2x2 */
+.sh-earn {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  padding: 0 14px;
+}
+.sh-earn .e {
+  background: var(--velvet-2); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  position: relative; overflow: hidden;
+}
+.sh-earn .e::before {
+  content: ''; position: absolute; right: -8px; top: -8px; width: 60px; height: 60px;
+  border-radius: 50%; opacity: 0.12;
+}
+.sh-earn .e.daily::before { background: var(--ember); }
+.sh-earn .e.ad::before { background: var(--iris); }
+.sh-earn .e.ref::before { background: var(--jade); }
+.sh-earn .e.spin::before { background: var(--crimson); }
+.sh-earn .e .ic { font-size: 16px; }
+.sh-earn .e .t { font-size: 10px; font-weight: 700; color: var(--bone); }
+.sh-earn .e .v { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ember); }
+.sh-earn .e .b {
+  align-self: flex-start; margin-top: 4px;
+  background: color-mix(in srgb, var(--ember) 20%, transparent);
+  color: var(--ember); font-size: 9px; font-weight: 700;
+  padding: 3px 8px; border-radius: var(--r-pill);
+}
+.sh-earn .e.daily .b { background: color-mix(in srgb, var(--ember) 20%, transparent); color: var(--ember); }
+.sh-earn .e.ad .b { background: color-mix(in srgb, var(--iris) 20%, transparent); color: var(--iris-2); }
+.sh-earn .e.ref .b { background: color-mix(in srgb, var(--jade) 20%, transparent); color: var(--jade); }
+.sh-earn .e.spin .b { background: color-mix(in srgb, var(--crimson) 20%, transparent); color: var(--crimson); }
+
+/* Trope chips */
+.sh-tropes {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px;
+}
+.sh-tropes .chip {
+  padding: 6px 12px; border-radius: var(--r-pill);
+  background: var(--velvet-2); border: 1px solid var(--line);
+  font-size: 10px; font-weight: 600; color: var(--bone);
+}
+.sh-tropes .chip.hot { color: var(--ember); border-color: color-mix(in srgb, var(--ember) 30%, transparent); }
+.sh-tropes .chip.new { color: var(--jade); border-color: color-mix(in srgb, var(--jade) 30%, transparent); }
+
+/* Bottom nav */
+.sh-nav {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 10px 0 18px;
+  background: color-mix(in srgb, var(--ink) 92%, transparent);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--line);
+}
+.sh-nav .item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 9px; color: var(--ash); position: relative; padding-top: 4px;
+}
+.sh-nav .item.active { color: var(--bone); }
+.sh-nav .item.active::before {
+  content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 2px; border-radius: 1px;
+  background: linear-gradient(90deg, var(--iris-2), var(--ember));
+}
+.sh-nav .item .ic { font-size: 16px; }
+
+/* ========================================================================
+   Other screen templates
+   ======================================================================== */
+.screen-auth {
+  flex: 1; padding: 60px 24px 24px; background: var(--ink);
+  display: flex; flex-direction: column;
+}
+.screen-auth .head { text-align: center; margin-bottom: 24px; }
+.screen-auth .head .ic { font-size: 36px; margin-bottom: 12px; }
+.screen-auth .head h2 { font-size: 22px; font-weight: 800; color: var(--bone); letter-spacing: -0.02em; }
+.screen-auth .head p { font-size: 12px; color: var(--ash); margin-top: 6px; line-height: 1.5; }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 10px; font-weight: 600; color: var(--ash); margin-bottom: 6px; letter-spacing: 0.05em; }
+.field input {
+  width: 100%; padding: 14px 16px; border-radius: var(--r-md);
+  background: var(--velvet-2); border: 1px solid var(--line);
+  color: var(--bone); font-family: 'Inter', sans-serif; font-size: 13px;
+  outline: none; transition: border-color .15s;
+}
+.field input:focus { border-color: var(--iris); }
+
+.otp-row { display: flex; gap: 8px; justify-content: center; margin: 8px 0 24px; }
+.otp-row .otp {
+  width: 42px; height: 52px; border-radius: var(--r-sm);
+  background: var(--velvet-2); border: 1.5px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; color: var(--bone);
+  font-family: 'JetBrains Mono', monospace;
+}
+.otp-row .otp.filled { border-color: var(--iris); }
+.otp-row .otp.active { border-color: var(--iris); box-shadow: 0 0 0 3px color-mix(in srgb, var(--iris) 20%, transparent); }
+
+.pin-row { display: flex; gap: 16px; justify-content: center; margin: 24px 0; }
+.pin-row .pin {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--line);
+}
+.pin-row .pin.filled { background: var(--iris); border-color: var(--iris); box-shadow: 0 0 8px var(--iris); }
+
+.avatar-pill {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--iris), var(--ember));
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px; font-size: 22px; font-weight: 800; color: var(--ink);
+}
+
+.link-row { display: flex; justify-content: space-between; font-size: 11px; margin-top: 16px; }
+.link-row a { color: var(--iris-2); font-weight: 600; }
+
+.screen-splash {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 30%, rgba(124, 58, 237, 0.2), transparent 60%), var(--ink);
+  gap: 16px;
+}
+.v-mark {
+  width: 84px; height: 84px; border-radius: 22px;
+  background: linear-gradient(135deg, var(--iris) 0%, var(--ember) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px; font-weight: 900; color: var(--ink);
+  box-shadow: 0 0 60px rgba(124, 58, 237, 0.6);
+}
+.screen-splash h1 { font-size: 28px; font-weight: 900; letter-spacing: -0.03em; color: var(--bone); margin-top: 8px; }
+.screen-splash .tag { font-size: 9px; color: var(--ash); letter-spacing: 0.2em; text-transform: uppercase; }
+.spinner { width: 28px; height: 28px; border: 2.5px solid var(--iris); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-top: 32px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.screen-onboard {
+  flex: 1; padding: 70px 28px 32px; display: flex; flex-direction: column;
+  background: var(--ink);
+}
+.onboard-art {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 120px; margin-top: 20px;
+  filter: drop-shadow(0 20px 40px rgba(124, 58, 237, 0.3));
+}
+.onboard-dots { display: flex; gap: 6px; justify-content: center; margin: 24px 0; }
+.onboard-dots .d { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.onboard-dots .d.on { width: 18px; background: var(--iris); }
+.onboard-cta { display: flex; flex-direction: column; gap: 10px; }
+
+.screen-search {
+  flex: 1; padding: 12px 14px 24px; background: var(--ink);
+  display: flex; flex-direction: column;
+}
+.search-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; background: var(--velvet-2); border: 1px solid var(--line);
+  border-radius: var(--r-pill); font-size: 12px; color: var(--bone);
+  margin-bottom: 16px;
+}
+.search-bar .ic { color: var(--ash); }
+.search-bar .v { color: var(--bone); }
+.search-bar .x { margin-left: auto; color: var(--ash); font-size: 14px; }
+
+.search-list { display: flex; flex-direction: column; gap: 10px; }
+.search-row { display: flex; align-items: center; gap: 10px; }
+.search-row .post {
+  width: 46px; height: 64px; border-radius: 6px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.search-row .info { flex: 1; min-width: 0; }
+.search-row .info .t { font-size: 12px; font-weight: 600; color: var(--bone); }
+.search-row .info .m { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ash); margin-top: 2px; }
+.search-row .coin-chip { padding: 3px 8px; font-size: 9px; }
+
+.screen-detail {
+  flex: 1; background: var(--ink); display: flex; flex-direction: column;
+}
+.detail-hero {
+  position: relative; height: 220px; overflow: hidden; flex-shrink: 0;
+  background: linear-gradient(135deg, #4a0e5a 0%, #6b1d2f 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 80px;
+}
+.detail-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 30%, var(--ink) 100%);
+}
+.detail-hero .back {
+  position: absolute; top: 8px; left: 8px; z-index: 5;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: white;
+}
+.detail-body { padding: 0 16px 16px; margin-top: -24px; position: relative; z-index: 2; }
+.detail-body h2 { font-size: 19px; font-weight: 800; color: var(--bone); letter-spacing: -0.02em; }
+.detail-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.detail-desc { font-size: 11px; color: var(--ash); margin-top: 10px; line-height: 1.5; }
+.detail-cta { display: flex; gap: 8px; margin-top: 14px; }
+.detail-cta .btn { flex: 1; }
+.detail-cta .btn-sq { width: 44px; flex: 0; padding: 0; }
+
+.ep-list { padding: 0 4px; }
+.ep-list h4 { font-size: 10px; color: var(--ash); letter-spacing: 0.12em; padding: 0 12px 8px; text-transform: uppercase; }
+.ep {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: var(--r-sm);
+  margin: 0 4px 2px;
+}
+.ep.watched .ep-n { background: var(--iris); color: white; border-color: var(--iris); }
+.ep.locked { opacity: 0.85; }
+.ep-n {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--velvet-2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--ash);
+  font-family: 'JetBrains Mono', monospace;
+}
+.ep-info { flex: 1; min-width: 0; }
+.ep-info .t { font-size: 12px; font-weight: 600; color: var(--bone); }
+.ep-info .m { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ash); margin-top: 2px; }
+.ep .lock { color: var(--ember); font-size: 14px; }
+
+.screen-player {
+  flex: 1; background: #000; position: relative; overflow: hidden;
+}
+.player-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #1a0e2a 0%, #3a0e1f 50%, #0b0712 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 110px; opacity: 0.55;
+}
+.player-top {
+  position: absolute; top: 8px; left: 12px; right: 12px; z-index: 5;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.player-top .back-pill {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; color: white;
+}
+.player-top .ep-counter {
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+  padding: 5px 12px; border-radius: var(--r-pill);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: white;
+  font-weight: 600;
+}
+.player-side {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 5;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.player-side .ic {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 9px; color: white; opacity: 0.9;
+}
+.player-side .ic .e { font-size: 22px; }
+.player-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
+  padding: 20px 16px 28px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.9), transparent);
+}
+.player-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.player-progress .t { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(255,255,255,0.8); }
+.player-progress .bar { flex: 1; height: 3px; background: rgba(255,255,255,0.2); border-radius: 2px; position: relative; }
+.player-progress .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 32%; background: var(--ember); border-radius: 2px; }
+.player-meta { display: flex; align-items: center; justify-content: space-between; }
+.player-meta .title { font-size: 12px; font-weight: 600; color: white; max-width: 160px; }
+.player-meta .earn { display: inline-flex; gap: 4px; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ember); font-weight: 700; }
+.player-ad {
+  position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: rgba(11, 7, 18, 0.85); backdrop-filter: blur(12px);
+  border: 1px solid var(--ember); border-radius: var(--r-pill);
+  padding: 8px 16px; display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; color: var(--ember);
+}
+.player-swipe {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 5;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.player-swipe .a {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,0.45); color: white;
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+
+.screen-paywall {
+  flex: 1; position: relative; background: #000; overflow: hidden;
+}
+.screen-paywall::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #1a0e2a, #3a0e1f);
+  opacity: 0.5;
+}
+.sheet {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--velvet); border-radius: var(--r-xl) var(--r-xl) 0 0;
+  border-top: 2px solid var(--iris);
+  padding: 12px 20px 28px;
+  box-shadow: 0 -20px 50px rgba(0,0,0,0.6);
+}
+.sheet .handle { width: 40px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 16px; }
+.sheet h3 { font-size: 18px; font-weight: 800; text-align: center; color: var(--bone); letter-spacing: -0.02em; }
+.sheet .sub { font-size: 11px; color: var(--ash); text-align: center; margin-top: 4px; }
+.sheet .opts { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+.sheet .opt {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px; border-radius: var(--r-md);
+  background: var(--velvet-2); border: 1px solid var(--line);
+}
+.sheet .opt.gold { border-color: var(--ember); }
+.sheet .opt.premium {
+  background: linear-gradient(135deg, var(--iris), color-mix(in srgb, var(--iris) 60%, #1a1426));
+  border: none;
+}
+.sheet .opt .ic { font-size: 20px; }
+.sheet .opt .txt { flex: 1; }
+.sheet .opt .txt .t { font-size: 13px; font-weight: 700; color: var(--bone); }
+.sheet .opt .txt .s { font-size: 10px; color: var(--ash); margin-top: 2px; }
+.sheet .opt.premium .txt .t, .sheet .opt.premium .txt .s { color: white; }
+.sheet .opt .arr { color: var(--ash); font-size: 16px; }
+.sheet .opt.premium .arr { color: white; }
+.sheet .maybe { margin-top: 12px; }
+
+.screen-wallet {
+  flex: 1; padding: 12px 14px 24px; background: var(--ink);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.wallet-title { font-size: 22px; font-weight: 800; color: var(--bone); padding: 8px 0; letter-spacing: -0.02em; }
+.balance-card {
+  border-radius: var(--r-lg); padding: 18px;
+  background: linear-gradient(135deg, var(--iris) 0%, #4a1d8a 100%);
+  position: relative; overflow: hidden;
+}
+.balance-card::after {
+  content: ''; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px;
+  border-radius: 50%; background: rgba(245, 158, 11, 0.18);
+}
+.balance-card .lbl { font-size: 9px; color: rgba(255,255,255,0.7); letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; }
+.balance-card .amt { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 800; color: white; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+.balance-card .amt .ic { color: var(--ember); font-size: 24px; }
+.balance-card .actions { display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 1; }
+.balance-card .actions .btn { flex: 1; padding: 10px; font-size: 12px; }
+
+.earn-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px; background: var(--velvet-2); border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.earn-row .ic {
+  width: 36px; height: 36px; border-radius: var(--r-sm);
+  background: var(--velvet); display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.earn-row .info { flex: 1; min-width: 0; }
+.earn-row .info .t { font-size: 12px; font-weight: 600; color: var(--bone); }
+.earn-row .info .s { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ember); margin-top: 2px; }
+
+.coin-pack-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.coin-pack {
+  padding: 10px 4px; border-radius: var(--r-sm);
+  background: var(--velvet-2); border: 1px solid var(--line);
+  text-align: center;
+}
+.coin-pack.featured { border-color: var(--ember); }
+.coin-pack .ic { font-size: 14px; }
+.coin-pack .v { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: var(--bone); margin-top: 4px; }
+.coin-pack .p { font-size: 9px; color: var(--ash); margin-top: 2px; }
+
+.history-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.history-row .src { flex: 1; font-size: 11px; color: var(--bone); }
+.history-row .amt { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
+.history-row .amt.plus { color: var(--jade); }
+.history-row .amt.minus { color: var(--bone); }
+
+.screen-vip {
+  flex: 1; padding: 0 16px 16px; background: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.vip-crown {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--ember), var(--ember-2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px;
+  box-shadow: var(--glow-ember);
+}
+.vip-title { font-size: 26px; font-weight: 900; color: var(--bone); letter-spacing: -0.03em; text-align: center; }
+.vip-sub { font-size: 12px; color: var(--ash); text-align: center; max-width: 240px; line-height: 1.5; }
+.vip-plans { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 12px; }
+.vip-plan {
+  padding: 14px; border-radius: var(--r-md);
+  background: var(--velvet-2); border: 1px solid var(--line);
+  display: flex; align-items: center; gap: 12px;
+}
+.vip-plan.featured { border-color: var(--ember); background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 10%, var(--velvet-2)), var(--velvet-2)); }
+.vip-plan .ic { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ash); }
+.vip-plan.featured .ic { border-color: var(--ember); background: var(--ember); }
+.vip-plan .info { flex: 1; }
+.vip-plan .info .t { font-size: 12px; font-weight: 700; color: var(--bone); }
+.vip-plan .info .s { font-size: 10px; color: var(--ash); }
+.vip-plan .p { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: var(--ember); }
+
+.screen-pay {
+  flex: 1; padding: 16px; background: var(--ink);
+}
+.pay-head .lbl { font-size: 10px; color: var(--ash); letter-spacing: 0.12em; text-transform: uppercase; }
+.pay-head h3 { font-size: 20px; font-weight: 800; color: var(--bone); margin-top: 4px; letter-spacing: -0.02em; }
+.pay-methods { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.pay-method {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px; border-radius: var(--r-md);
+  background: var(--velvet-2); border: 1px solid var(--line);
+}
+.pay-method.selected { border-color: var(--iris); }
+.pay-method .ic { font-size: 20px; }
+.pay-method .info { flex: 1; }
+.pay-method .info .t { font-size: 12px; font-weight: 700; color: var(--bone); }
+.pay-method .info .s { font-size: 9px; color: var(--ash); }
+.pay-method .r { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line); }
+.pay-method.selected .r { border-color: var(--iris); background: var(--iris); box-shadow: inset 0 0 0 3px var(--velvet-2); }
+.pay-foot { margin-top: 16px; }
+
+.screen-me {
+  flex: 1; padding: 16px 14px 80px; background: var(--ink);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.me-head { display: flex; align-items: center; gap: 12px; padding: 8px 0 12px; }
+.me-head .av {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--iris), var(--ember));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; color: var(--ink);
+}
+.me-head .info { flex: 1; }
+.me-head .info .n { font-size: 16px; font-weight: 700; color: var(--bone); }
+.me-head .info .e { font-size: 10px; color: var(--ash); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+.me-head .pill { background: linear-gradient(135deg, var(--ember), var(--ember-2)); color: var(--ink); padding: 4px 10px; border-radius: var(--r-pill); font-size: 9px; font-weight: 800; letter-spacing: 0.05em; }
+
+.me-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.me-stat { padding: 10px; background: var(--velvet-2); border: 1px solid var(--line); border-radius: var(--r-sm); text-align: center; }
+.me-stat .v { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 800; color: var(--bone); }
+.me-stat .l { font-size: 9px; color: var(--ash); margin-top: 2px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.menu-list { display: flex; flex-direction: column; gap: 1px; background: var(--line); border-radius: var(--r-md); overflow: hidden; }
+.menu-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; background: var(--velvet-2);
+}
+.menu-item .ic { width: 22px; text-align: center; font-size: 14px; }
+.menu-item .t { flex: 1; font-size: 13px; font-weight: 600; color: var(--bone); }
+.menu-item .arr { color: var(--ash); font-size: 12px; }
+.menu-item .badge { margin-left: auto; }
+
+.screen-settings {
+  flex: 1; padding: 16px 14px 24px; background: var(--ink);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.theme-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.theme-card {
+  padding: 12px 8px; background: var(--velvet-2); border: 1.5px solid var(--line);
+  border-radius: var(--r-md); text-align: center; cursor: pointer;
+}
+.theme-card.on { border-color: var(--iris); box-shadow: 0 0 0 3px color-mix(in srgb, var(--iris) 20%, transparent); }
+.theme-card .swatch { width: 100%; aspect-ratio: 16/9; border-radius: 6px; margin-bottom: 8px; }
+.theme-card .name { font-size: 10px; font-weight: 600; color: var(--bone); }
+.sw-dark { background: linear-gradient(135deg, #0B0712, #7C3AED); }
+.sw-light { background: linear-gradient(135deg, #FFFFFF, #A78BFA); }
+.sw-cupcake { background: linear-gradient(135deg, #FAF7F5, #65C3F3); }
+.sw-cyberpunk { background: linear-gradient(135deg, #0A0A0F, #FF7597); }
+.sw-sunset { background: linear-gradient(135deg, #1A0E1A, #F472B6); }
+.sw-valentine { background: linear-gradient(135deg, #FEE7EF, #E96D7B); }
+
+.setting-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.setting-row .t { flex: 1; font-size: 12px; color: var(--bone); }
+.setting-row .s { font-size: 11px; color: var(--ash); font-family: 'JetBrains Mono', monospace; }
+.toggle { width: 32px; height: 18px; border-radius: 9px; background: var(--line); position: relative; }
+.toggle.on { background: var(--iris); }
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: white; border-radius: 50%; transition: left .15s; }
+.toggle.on::after { left: 16px; }
+
+/* ========================================================================
+   Comparison band — what's different from v1
+   ======================================================================== */
+.diff-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px;
+}
+.diff-col h3 { font-size: 14px; font-weight: 700; margin-bottom: 16px; letter-spacing: 0.04em; }
+.diff-col.before h3 { color: var(--ash); }
+.diff-col.after h3 { color: var(--iris-2); }
+.diff-col ul { list-style: none; }
+.diff-col li {
+  padding: 14px 0; border-top: 1px solid var(--line);
+  font-size: 12px; color: var(--ash); line-height: 1.55;
+}
+.diff-col li b { color: var(--bone); display: block; font-weight: 600; margin-bottom: 2px; }
+.diff-col.after li b { color: var(--iris-2); }
+
+/* ========================================================================
+   Footer
+   ======================================================================== */
+.foot {
+  padding: 80px 28px 40px; text-align: center;
+  border-top: 1px solid var(--line);
+}
+.foot .mark {
+  font-size: 22px; font-weight: 900; letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--iris-2), var(--ember));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  display: inline-block;
+}
+.foot p { font-size: 11px; color: var(--ash); margin-top: 12px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+.foot .c { font-size: 10px; color: var(--ash-2); margin-top: 28px; font-family: 'JetBrains Mono', monospace; }
+
+/* Small responsive trim */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; padding: 120px 24px 60px; }
+  .hero-side { max-width: 400px; }
+  .band { padding: 60px 24px; }
+  .diff-grid { grid-template-columns: 1fr; }
+  .home-phones { justify-content: center; }
+}
+@media (max-width: 600px) {
+  .topbar { padding: 12px 18px; }
+  .topbar .crumbs { display: none; }
+  .hero-text h1 { font-size: 48px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     TOP BAR — minimal, not the v1 tab nav
+     ════════════════════════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <div class="mark">V</div>
+  <div class="crumbs">
+    <span class="active">Cinematic v2</span>
+    <span>·</span>
+    <span>specimens · 16 screens</span>
+  </div>
+  <div class="spacer"></div>
+  <div style="display:flex; gap:6px; align-items:center;">
+    <div class="theme-pip theme-pip-dark" data-on="true" data-theme-set="dark" title="Dark"></div>
+    <div class="theme-pip theme-pip-light" data-theme-set="light" title="Light"></div>
+    <div class="theme-pip theme-pip-cupcake" data-theme-set="cupcake" title="Cupcake"></div>
+    <div class="theme-pip theme-pip-cyberpunk" data-theme-set="cyberpunk" title="Cyberpunk"></div>
+    <div class="theme-pip theme-pip-sunset" data-theme-set="sunset" title="Sunset"></div>
+    <div class="theme-pip theme-pip-valentine" data-theme-set="valentine" title="Valentine"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     HERO — the opening thesis
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="eyebrow">Vida · Cinematic v2</div>
+    <h1>
+      Every minute<br />
+      <span class="gradient">earned.</span><br />
+      Every drama<br />
+      <span class="gradient">vertical.</span>
+    </h1>
+    <p class="lede">
+      A redesign of the Vida spec. The page itself is a vertical scroll that walks
+      the user through the app — sixteen full-bleed screen specimens stacked
+      top-to-bottom, in the order you'd actually meet them.
+    </p>
+    <div class="meta">
+      <div>
+        <span>Token system</span>
+        <strong>6</strong>
+      </div>
+      <div>
+        <span>Specimens</span>
+        <strong class="mono">16</strong>
+      </div>
+      <div>
+        <span>Signature</span>
+        <strong>mono</strong>
+      </div>
+    </div>
+  </div>
+  <div class="hero-side">
+    <div class="tile tall" style="background:linear-gradient(180deg, #3a0e1f, #1a0e2a)">
+      <span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:64px; opacity:0.5;">👑</span>
+      <div class="meta">
+        <div class="t">The Heir's Secret Bride</div>
+        <div class="v">68 eps · 4.2M views</div>
+      </div>
+    </div>
+    <div class="tile" style="background:linear-gradient(180deg, #1a1f3a, #0e1a2a)">
+      <span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:48px; opacity:0.5;">🐺</span>
+      <div class="meta">
+        <div class="t">Wolf King's Last Mate</div>
+        <div class="v">82 eps · 6.1M</div>
+      </div>
+    </div>
+    <div class="tile" style="background:linear-gradient(180deg, #3a1a0e, #2a0e1a)">
+      <span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:48px; opacity:0.5;">🔥</span>
+      <div class="meta">
+        <div class="t">His Contract, My Revenge</div>
+        <div class="v">54 eps · 2.8M</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     PALETTE BAND — the signature colors
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-velvet">
+  <div class="eyebrow">Palette</div>
+  <h2>Six colors do all the work.</h2>
+  <p class="lede">Every component, surface, and screen pulls from this single system. Ember is the only warm color — and it's reserved for coins. Everything else is a temperature of violet.</p>
+  <div style="display:grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 40px;">
+    <div>
+      <div style="height:120px; background:#0B0712; border:1px solid var(--line); border-radius:var(--r-md);"></div>
+      <div class="mono" style="font-size:10px; color:var(--ash); margin-top:8px;">#0B0712</div>
+      <div style="font-size:11px; font-weight:600; color:var(--bone);">Ink</div>
+    </div>
+    <div>
+      <div style="height:120px; background:#1A1426; border:1px solid var(--line); border-radius:var(--r-md);"></div>
+      <div class="mono" style="font-size:10px; color:var(--ash); margin-top:8px;">#1A1426</div>
+      <div style="font-size:11px; font-weight:600; color:var(--bone);">Velvet</div>
+    </div>
+    <div>
+      <div style="height:120px; background:linear-gradient(135deg,#7C3AED,#A78BFA); border:1px solid var(--line); border-radius:var(--r-md);"></div>
+      <div class="mono" style="font-size:10px; color:var(--ash); margin-top:8px;">#7C3AED</div>
+      <div style="font-size:11px; font-weight:600; color:var(--bone);">Iris</div>
+    </div>
+    <div>
+      <div style="height:120px; background:linear-gradient(135deg,#F59E0B,#D97706); border:1px solid var(--line); border-radius:var(--r-md);"></div>
+      <div class="mono" style="font-size:10px; color:var(--ash); margin-top:8px;">#F59E0B</div>
+      <div style="font-size:11px; font-weight:600; color:var(--bone);">Ember</div>
+    </div>
+    <div>
+      <div style="height:120px; background:#E8E4EE; border:1px solid var(--line); border-radius:var(--r-md);"></div>
+      <div class="mono" style="font-size:10px; color:var(--ash); margin-top:8px;">#E8E4EE</div>
+      <div style="font-size:11px; font-weight:600; color:var(--bone);">Bone</div>
+    </div>
+    <div>
+      <div style="height:120px; background:#6B6478; border:1px solid var(--line); border-radius:var(--r-md);"></div>
+      <div class="mono" style="font-size:10px; color:var(--ash); margin-top:8px;">#6B6478</div>
+      <div style="font-size:11px; font-weight:600; color:var(--bone);">Ash</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     COMPONENTS — the design vocabulary
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-ink">
+  <div class="eyebrow">Vocabulary</div>
+  <h2>Components we use everywhere.</h2>
+  <p class="lede">Twelve reusable pieces. Every screen below is built from this set. Notice the badges — they carry the marketing language (NEW, VIP, HOT), while every number is set in JetBrains Mono so it reads as data.</p>
+  <div class="components">
+    <div class="comp">
+      <div class="name">Buttons</div>
+      <div class="desc">Three variants. The ember one is for coin actions only.</div>
+      <div class="demo">
+        <button class="btn btn-primary btn-sm">Play</button>
+        <button class="btn btn-ember btn-sm">✦ Spend</button>
+        <button class="btn btn-ghost btn-sm">Skip</button>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="name">Marketing badges</div>
+      <div class="desc">Card-top-left slot. Reserved for editorial signals.</div>
+      <div class="demo">
+        <span class="badge badge-new">NEW</span>
+        <span class="badge badge-vip">VIP</span>
+        <span class="badge badge-hot">HOT</span>
+        <span class="badge badge-excl">EXCLUSIVE</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="name">Coin counter</div>
+      <div class="desc">Always visible. The number is mono, the dot pulses.</div>
+      <div class="demo">
+        <div class="coin-chip"><span class="dot"></span><span class="amount">1,250</span></div>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="name">Coin-cost chip</div>
+      <div class="desc">Card-bottom-right slot. Tells the user the price before tap.</div>
+      <div class="demo">
+        <span class="badge badge-coin mono">✦ 18</span>
+        <span class="badge badge-coin mono">✦ 25</span>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="name">Progress bar</div>
+      <div class="desc">Continue Watching + player. Ember = watched portion.</div>
+      <div class="demo" style="width:100%;">
+        <div style="width:80%; height:4px; background:var(--line); border-radius:2px; position:relative;">
+          <div style="position:absolute; left:0; top:0; bottom:0; width:42%; background:var(--ember); border-radius:2px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="name">Episode row</div>
+      <div class="desc">Watched · Unlocked · Locked. The number is mono.</div>
+      <div class="demo" style="flex-direction:column; align-items:stretch; width:100%; gap:4px;">
+        <div class="ep" style="padding:8px; margin:0;">
+          <div class="ep-n" style="background:var(--iris); color:white; border-color:var(--iris);">07</div>
+          <div class="ep-info"><div class="t">The Reveal</div><div class="m">1:24 · free</div></div>
+        </div>
+        <div class="ep locked" style="padding:8px; margin:0;">
+          <div class="ep-n">08</div>
+          <div class="ep-info"><div class="t">The Door Opens</div><div class="m">1:30 · ✦ 25</div></div>
+          <span class="lock">🔒</span>
+        </div>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="name">Top-10 rank</div>
+      <div class="desc">The number IS the card. 36px mono, ember, with ink stroke.</div>
+      <div class="demo" style="position:relative;">
+        <div style="width:60px; aspect-ratio:2/3; background:linear-gradient(135deg,#3a0e1f,#1a0e2a); border-radius:var(--r-sm); display:flex; align-items:center; justify-content:center; font-size:20px;">👑</div>
+        <div style="position:absolute; top:-6px; left:-8px; font-family:'JetBrains Mono',monospace; font-weight:800; font-size:36px; color:var(--ember); -webkit-text-stroke:1.5px var(--ink); line-height:1;">01</div>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="name">Bottom nav</div>
+      <div class="desc">4 tabs. Active gets a gradient hairline above.</div>
+      <div class="demo" style="width:100%;">
+        <div style="display:flex; justify-content:space-around; width:100%; background:var(--velvet-2); border-radius:var(--r-pill); padding:8px 12px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:var(--bone); position:relative; padding-top:4px;">
+            <span style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); width:18px; height:2px; border-radius:1px; background:linear-gradient(90deg,var(--iris-2),var(--ember));"></span>
+            <span style="font-size:14px;">🏠</span>Home
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:var(--ash);">🔍<span>Search</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:var(--ash);">🪙<span>Wallet</span></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px; font-size:9px; color:var(--ash);">👤<span>Me</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     HOME — the centerpiece
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-velvet" id="home">
+  <div class="eyebrow">01 · The home screen</div>
+  <h2>The screen users land on three times a day.</h2>
+  <p class="lede">Hero, continue watching, top 10, three genre shelves, the earn grid, and twelve trope chips. Every section earns its place by giving the user a next action.</p>
+  <div class="band-home" style="margin-top: 56px;">
+    <div class="home-phones">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot dim"></div></div>
+          </div>
+          <div class="screen-home">
+            <div class="sh-topbar">
+              <div class="sh-wordmark">Vida</div>
+              <div class="coin-chip"><span class="dot"></span><span class="amount">1,250</span></div>
+              <div class="bell">🔔</div>
+            </div>
+            <div class="sh-search"><span>🔍</span><span>Search tropes, titles…</span></div>
+            <div class="sh-hero">
+              <div class="info">
+                <div class="tag">EP 1 · 68 EPS · NEW THIS WEEK</div>
+                <div class="title">The Heir's<br/>Secret Bride</div>
+                <div class="meta">4.2M views · 18 ✦ to unlock</div>
+              </div>
+              <div class="play-btn">▶</div>
+            </div>
+
+            <div class="sh-shelf-h">
+              <div class="l"><span class="eyebrow">Resume</span></div>
+              <span class="see-all">See all</span>
+            </div>
+            <div class="sh-row cw">
+              <div class="sh-card">
+                <div class="poster" style="background:linear-gradient(135deg,#3a0e1f,#1a0e2a);">
+                  <span style="font-size:36px; position:relative; z-index:1;">💍</span>
+                  <span class="mkt"><span class="badge badge-vip">VIP</span></span>
+                  <span class="coin">✦ 18</span>
+                  <div class="progress" style="width:42%;"></div>
+                </div>
+                <div class="t">The Duke's Contract Wife</div>
+                <div class="m">EP 12 · 0:42 LEFT</div>
+              </div>
+              <div class="sh-card">
+                <div class="poster" style="background:linear-gradient(135deg,#1a1f3a,#0e1a2a);">
+                  <span style="font-size:36px; position:relative; z-index:1;">🐺</span>
+                  <span class="coin">✦ 25</span>
+                  <div class="progress" style="width:78%;"></div>
+                </div>
+                <div class="t">Wolf King's Last Mate</div>
+                <div class="m">EP 47 · 0:18 LEFT</div>
+              </div>
+            </div>
+
+            <div class="sh-shelf-h">
+              <div class="l"><span class="eyebrow">Trending</span><h3>Tonight</h3></div>
+              <span class="see-all">See all</span>
+            </div>
+            <div class="sh-row">
+              <div class="sh-card">
+                <div class="poster" style="background:linear-gradient(135deg,#3a0e1f,#0e1a2a);"><span style="position:relative; z-index:1;">💔</span><span class="mkt"><span class="badge badge-new">NEW</span></span><span class="coin">✦ 18</span></div>
+                <div class="t">Bound by the Mafia's Ring</div>
+                <div class="m">72 EPS · 5.4M</div>
+              </div>
+              <div class="sh-card">
+                <div class="poster" style="background:linear-gradient(135deg,#1a0e2a,#3a0e1f);"><span style="position:relative; z-index:1;">✨</span><span class="mkt"><span class="badge badge-hot">HOT</span></span><span class="coin">✦ 22</span></div>
+                <div class="t">Reborn as the CEO's Wife</div>
+                <div class="m">88 EPS · 8.1M</div>
+              </div>
+              <div class="sh-card">
+                <div class="poster" style="background:linear-gradient(135deg,#0e1a2a,#1a0e2a);"><span style="position:relative; z-index:1;">🩺</span><span class="mkt"><span class="badge badge-excl">EXCL</span></span><span class="coin">✦ 18</span></div>
+                <div class="t">The Doctor's Secret Heir</div>
+                <div class="m">54 EPS · 3.2M</div>
+              </div>
+            </div>
+
+            <div class="sh-shelf-h">
+              <div class="l"><span class="eyebrow">Top 10</span><h3>This week</h3></div>
+              <span class="see-all">See all</span>
+            </div>
+            <div class="sh-row top10">
+              <div class="sh-card"><div class="rank">01</div><div class="poster" style="background:linear-gradient(135deg,#3a0e1f,#1a0e2a);"><span style="position:relative; z-index:1;">💍</span><span class="coin">✦ 18</span></div><div class="t">The Duke's Contract Wife</div><div class="m">6.2M</div></div>
+              <div class="sh-card"><div class="rank">02</div><div class="poster" style="background:linear-gradient(135deg,#2a0e3a,#1a0e2a);"><span style="position:relative; z-index:1;">✨</span><span class="coin">✦ 22</span></div><div class="t">Reborn as the CEO's Wife</div><div class="m">5.4M</div></div>
+              <div class="sh-card"><div class="rank">03</div><div class="poster" style="background:linear-gradient(135deg,#1a0e2a,#1a1f3a);"><span style="position:relative; z-index:1;">🐺</span><span class="coin">✦ 25</span></div><div class="t">Wolf King's Last Mate</div><div class="m">4.9M</div></div>
+              <div class="sh-card"><div class="rank">04</div><div class="poster" style="background:linear-gradient(135deg,#3a0e1f,#2a0e3a);"><span style="position:relative; z-index:1;">🔥</span><span class="coin">✦ 18</span></div><div class="t">His Contract, My Revenge</div><div class="m">4.1M</div></div>
+            </div>
+
+            <div class="sh-shelf-h">
+              <div class="l"><span class="eyebrow">Watch & earn</span></div>
+            </div>
+            <div class="sh-earn">
+              <div class="e daily">
+                <div class="ic">🎁</div>
+                <div class="t">Daily check-in</div>
+                <div class="v">+ 100 ✦</div>
+                <div class="b">Claim</div>
+              </div>
+              <div class="e ad">
+                <div class="ic">📺</div>
+                <div class="t">Watch an ad</div>
+                <div class="v">+ 20 ✦</div>
+                <div class="b">Play</div>
+              </div>
+              <div class="e ref">
+                <div class="ic">👥</div>
+                <div class="t">Refer a friend</div>
+                <div class="v">+ 50 ✦</div>
+                <div class="b">Share</div>
+              </div>
+              <div class="e spin">
+                <div class="ic">🎡</div>
+                <div class="t">Spin the wheel</div>
+                <div class="v">UP TO 500 ✦</div>
+                <div class="b">Spin</div>
+              </div>
+            </div>
+
+            <div class="sh-shelf-h" style="margin-top:18px;">
+              <div class="l"><span class="eyebrow">Browse by trope</span></div>
+            </div>
+            <div class="sh-tropes">
+              <span class="chip hot">🔥 Revenge</span>
+              <span class="chip">👑 Royalty</span>
+              <span class="chip">🐺 Werewolf</span>
+              <span class="chip">💍 Contract</span>
+              <span class="chip new">✨ Reborn</span>
+              <span class="chip">🩺 Doctor</span>
+              <span class="chip">🗡️ Mafia</span>
+              <span class="chip">👶 Secret baby</span>
+              <span class="chip">💔 Heartbreak</span>
+              <span class="chip">⏳ Time travel</span>
+              <span class="chip">💼 CEO</span>
+              <span class="chip">🎭 Enemies → lovers</span>
+            </div>
+
+            <div class="sh-nav">
+              <div class="item active"><span class="ic">🏠</span>Home</div>
+              <div class="item"><span class="ic">🔍</span>Search</div>
+              <div class="item"><span class="ic">🪙</span>Wallet</div>
+              <div class="item"><span class="ic">👤</span>Me</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="home-annotations">
+      <div class="eyebrow">Anatomy</div>
+      <h3 style="font-size: 24px; font-weight: 800; color: var(--bone); margin-top: 8px; letter-spacing: -0.02em;">Ten sections, one scroll.</h3>
+      <ul>
+        <li><span class="n">01</span><div><b>Top bar</b>Gradient wordmark, ember coin chip, bell. The three things that must always be tappable.</div></li>
+        <li><span class="n">02</span><div><b>Hero</b>Featured drama at 16:11, full-width. Mono tag for episode count, ember Play button anchored bottom-right.</div></li>
+        <li><span class="n">03</span><div><b>Continue Watching</b>Wide cards with embedded progress bar and remaining time in mono. Return users land here first.</div></li>
+        <li><span class="n">04</span><div><b>Tonight Trending</b>Standard 2:3 cards. Marketing badge top-left, coin cost bottom-right. "See all" right-aligned.</div></li>
+        <li><span class="n">05</span><div><b>Top 10</b>Cards share a 36px mono rank digit with an ink stroke. The number is the card.</div></li>
+        <li><span class="n">06</span><div><b>Watch & Earn</b>2×2 grid replacing v1's single banner. Four small commitments beat one big one.</div></li>
+        <li><span class="n">07</span><div><b>Tropes</b>12 chips with hot/new color tints. ReelShort's category vocabulary without their UI noise.</div></li>
+        <li><span class="n">08</span><div><b>Bottom nav</b>Active tab gets a gradient hairline above. No badge dots — cleaner at this density.</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SCREENS BAND 1 — Splash / Onboarding / Sign up / OTP / PIN setup
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-ink">
+  <div class="eyebrow">02 · The first launch</div>
+  <h2>Splash, onboarding, and the auth chain.</h2>
+  <p class="lede">Five screens, one job: get the user to Home with a PIN set. The auth chain is email → OTP → PIN. No phone number, no social.</p>
+  <div class="phones">
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-splash">
+            <div class="v-mark">V</div>
+            <h1>Vida</h1>
+            <div class="tag">EVERY MINUTE. EVERY DRAMA. EARNED.</div>
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">01 / 16</div>
+        <div class="name">Splash</div>
+        <div class="desc">Auto-advances. New users → onboarding. Returning → PIN login.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-onboard">
+            <div class="onboard-art">🎬</div>
+            <div style="text-align:center; padding: 0 8px;">
+              <div class="eyebrow" style="margin-bottom: 6px;">Slide 1 of 3</div>
+              <h2 style="font-size:22px; font-weight:800; color:var(--bone); letter-spacing:-0.02em; line-height:1.1;">Watch. Earn. Unlock.</h2>
+              <p style="font-size:12px; color:var(--ash); margin-top:8px; line-height:1.5;">Bite-sized vertical dramas. Every minute watched fills your coin jar.</p>
+            </div>
+            <div class="onboard-dots"><div class="d on"></div><div class="d"></div><div class="d"></div></div>
+            <div class="onboard-cta">
+              <button class="btn btn-primary btn-lg">Next →</button>
+              <button class="btn btn-ghost">Skip</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">02 / 16</div>
+        <div class="name">Onboarding</div>
+        <div class="desc">3 slides, shown once per install. The slide art is the one place emoji is allowed to be huge.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-auth">
+            <div class="head">
+              <div class="ic">✉️</div>
+              <div class="eyebrow" style="margin-bottom:6px;">Step 1 of 2</div>
+              <h2>Create your account</h2>
+              <p>Email only. No phone, no social. We send a 6-digit code.</p>
+            </div>
+            <div class="field">
+              <label>Email address</label>
+              <input value="amaobi@vida.app" readonly />
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input type="password" value="••••••••" readonly />
+            </div>
+            <button class="btn btn-primary btn-lg" style="width:100%; margin-top: 6px;">Continue →</button>
+            <p style="font-size: 9px; color: var(--ash-2); text-align: center; margin-top: 14px; line-height: 1.5;">By continuing you agree to our Terms and acknowledge our Privacy Policy.</p>
+            <div style="margin-top:auto; text-align:center; padding-top: 20px;">
+              <span style="font-size: 11px; color: var(--ash);">Already have an account? </span>
+              <span style="color: var(--iris-2); font-weight: 600; font-size: 11px;">Log in</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">03 / 16</div>
+        <div class="name">Email sign up</div>
+        <div class="desc">POST /auth/signup → email OTP. Single field pair. No extras.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-auth">
+            <div class="head">
+              <div class="ic">📧</div>
+              <h2>Enter the code</h2>
+              <p>Sent to <span style="color: var(--bone); font-weight: 600;">amaobi@vida.app</span></p>
+            </div>
+            <div class="otp-row">
+              <div class="otp filled">4</div>
+              <div class="otp filled">8</div>
+              <div class="otp filled">2</div>
+              <div class="otp active"></div>
+              <div class="otp"></div>
+              <div class="otp"></div>
+            </div>
+            <button class="btn btn-primary btn-lg" style="width:100%;">Verify →</button>
+            <p style="font-size: 11px; color: var(--ash); text-align: center; margin-top: 18px;">Didn't get it? <span style="color: var(--iris-2); font-weight: 600;">Resend</span></p>
+            <div style="margin-top:auto; text-align:center; padding-top: 20px;">
+              <span class="mono" style="font-size: 9px; color: var(--ash-2);">00:42 · resend available</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">04 / 16</div>
+        <div class="name">Email OTP</div>
+        <div class="desc">POST /auth/verify-otp → JWT. Resend timer in mono.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-auth">
+            <div class="head">
+              <div class="ic">🔐</div>
+              <h2>Set a transaction PIN</h2>
+              <p>4 digits. Used to log in and confirm purchases.</p>
+            </div>
+            <div class="pin-row">
+              <div class="pin filled"></div>
+              <div class="pin filled"></div>
+              <div class="pin filled"></div>
+              <div class="pin"></div>
+            </div>
+            <p style="font-size: 10px; color: var(--ash); text-align: center; line-height: 1.5; max-width: 240px; margin: 0 auto;">Avoid birthdays and repeated digits. You'll re-enter it once to confirm.</p>
+            <div style="margin-top: auto;">
+              <button class="btn btn-primary btn-lg" style="width:100%;">Set PIN →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">05 / 16</div>
+        <div class="name">PIN setup</div>
+        <div class="desc">bcrypt pin_hash. Re-entry step is the next screen.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SCREENS BAND 2 — PIN login / Search
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-velvet">
+  <div class="eyebrow">03 · Returning users</div>
+  <h2>PIN login and the search experience.</h2>
+  <p class="lede">Returning users skip the splash. PIN login is biometric-first; the password is a fallback. Search shows what's trending in the last hour so the first tap is interesting.</p>
+  <div class="phones">
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-auth">
+            <div style="padding: 4px 0 16px;">
+              <div class="back" style="width:32px; height:32px; border-radius:50%; background:var(--velvet-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--bone);">←</div>
+            </div>
+            <div class="head" style="margin-bottom:20px;">
+              <div class="avatar-pill">A</div>
+              <h2>Welcome back, @amaobi</h2>
+              <p>Enter your 4-digit PIN</p>
+            </div>
+            <div class="pin-row">
+              <div class="pin filled"></div>
+              <div class="pin filled"></div>
+              <div class="pin"></div>
+              <div class="pin"></div>
+            </div>
+            <div style="text-align:center; margin-top:8px;">
+              <div class="mono" style="font-size:9px; color:var(--ash-2);">3 attempts remaining</div>
+            </div>
+            <div class="link-row">
+              <a style="color: var(--iris-2); font-weight: 600; font-size: 11px;">Use password</a>
+              <a style="color: var(--iris-2); font-weight: 600; font-size: 11px;">Forgot PIN?</a>
+            </div>
+            <div style="margin-top:auto; padding-top:24px; text-align:center;">
+              <div style="width:60px; height:60px; border-radius:50%; background:var(--velvet-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; margin:0 auto; font-size:24px;">🔒</div>
+              <div style="font-size:10px; color:var(--ash); margin-top:8px;">Touch ID available</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">06 / 16</div>
+        <div class="name">PIN login</div>
+        <div class="desc">Biometric primary. Attempt counter in mono.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-search">
+            <div class="search-bar">
+              <span class="ic">🔍</span>
+              <span class="v">werewolf</span>
+              <span class="x">×</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 4px 8px;">
+              <div class="eyebrow">Trending searches</div>
+              <span style="font-size: 9px; color: var(--ash); font-family: 'JetBrains Mono', monospace;">last hour</span>
+            </div>
+            <div style="display:flex; gap: 6px; flex-wrap: wrap; padding: 0 4px 16px;">
+              <span class="chip" style="padding:6px 12px; border-radius:var(--r-pill); background:var(--velvet-2); border:1px solid var(--line); font-size:10px; font-weight:600; color:var(--ember); border-color: color-mix(in srgb, var(--ember) 30%, transparent);">🔥 revenge</span>
+              <span class="chip" style="padding:6px 12px; border-radius:var(--r-pill); background:var(--velvet-2); border:1px solid var(--line); font-size:10px; font-weight:600; color:var(--bone);">contract marriage</span>
+              <span class="chip" style="padding:6px 12px; border-radius:var(--r-pill); background:var(--velvet-2); border:1px solid var(--line); font-size:10px; font-weight:600; color:var(--bone);">CEO wife</span>
+              <span class="chip" style="padding:6px 12px; border-radius:var(--r-pill); background:var(--velvet-2); border:1px solid var(--line); font-size:10px; font-weight:600; color:var(--bone);">secret baby</span>
+              <span class="chip" style="padding:6px 12px; border-radius:var(--r-pill); background:var(--velvet-2); border:1px solid var(--line); font-size:10px; font-weight:600; color:var(--bone);">time travel</span>
+              <span class="chip" style="padding:6px 12px; border-radius:var(--r-pill); background:var(--velvet-2); border:1px solid var(--line); font-size:10px; font-weight:600; color:var(--bone);">fake dating</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 4px;">
+              <div class="eyebrow">14 results</div>
+              <span style="font-size: 9px; color: var(--ash);">Relevance</span>
+            </div>
+            <div class="search-list">
+              <div class="search-row">
+                <div class="post" style="background:linear-gradient(135deg,#1a1f3a,#0e1a2a);">🐺</div>
+                <div class="info">
+                  <div class="t">Wolf King's Last Mate</div>
+                  <div class="m">82 EPS · 6.1M VIEWS · WEREWOLF</div>
+                </div>
+                <div class="coin-chip" style="padding:3px 8px; font-size:9px;"><span class="dot"></span><span class="amount">25</span></div>
+              </div>
+              <div class="search-row">
+                <div class="post" style="background:linear-gradient(135deg,#2a0e3a,#1a0e2a);">🐺</div>
+                <div class="info">
+                  <div class="t">His Feral Bride</div>
+                  <div class="m">68 EPS · 3.8M VIEWS · WEREWOLF</div>
+                </div>
+                <div class="coin-chip" style="padding:3px 8px; font-size:9px;"><span class="dot"></span><span class="amount">18</span></div>
+              </div>
+              <div class="search-row">
+                <div class="post" style="background:linear-gradient(135deg,#3a0e1f,#1a0e2a);">🐺</div>
+                <div class="info">
+                  <div class="t">Bound to the Alpha</div>
+                  <div class="m">74 EPS · 2.9M VIEWS · WEREWOLF</div>
+                </div>
+                <div class="coin-chip" style="padding:3px 8px; font-size:9px;"><span class="dot"></span><span class="amount">22</span></div>
+              </div>
+              <div class="search-row">
+                <div class="post" style="background:linear-gradient(135deg,#0e1a2a,#1a0e2a);">🐺</div>
+                <div class="info">
+                  <div class="t">Cursed by the Moon</div>
+                  <div class="m">90 EPS · 4.6M VIEWS · WEREWOLF</div>
+                </div>
+                <div class="coin-chip" style="padding:3px 8px; font-size:9px;"><span class="dot"></span><span class="amount">18</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">07 / 16</div>
+        <div class="name">Search</div>
+        <div class="desc">Trending searches, then results. Row layout, not grid, so titles breathe.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SCREENS BAND 3 — Series detail / Player
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-ink">
+  <div class="eyebrow">04 · The deep view</div>
+  <h2>Series detail and the vertical player.</h2>
+  <p class="lede">The detail screen is where the catalogue becomes a story. The player is where the product happens — full-bleed, swipe-vertical, monetized in the seams.</p>
+  <div class="phones">
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-detail">
+            <div class="detail-hero" style="background:linear-gradient(135deg,#2a0e3a,#3a0e1f);">
+              💍
+              <div class="back">←</div>
+            </div>
+            <div class="detail-body">
+              <h2>The Duke's Contract Wife</h2>
+              <div class="detail-badges">
+                <span class="badge badge-new">NEW</span>
+                <span class="badge badge-vip">VIP</span>
+                <span class="badge" style="background:var(--velvet-2); color:var(--ash);">CONTRACT</span>
+                <span class="badge" style="background:var(--velvet-2); color:var(--ash);">68 EPS</span>
+              </div>
+              <div class="detail-desc">She signed a paper marriage to save her father. He signed it to inherit an empire. The clause they didn't read: one year, one bed, one secret that ends it all.</div>
+              <div class="detail-cta">
+                <button class="btn btn-primary">▶ Start watching</button>
+                <button class="btn btn-ghost btn-sq">＋</button>
+              </div>
+            </div>
+            <div class="ep-list">
+              <h4>Episodes · 12 of 68 unlocked</h4>
+              <div class="ep watched">
+                <div class="ep-n">✓</div>
+                <div class="ep-info"><div class="t">Ep 1 — The Contract</div><div class="m">1:24 · free</div></div>
+              </div>
+              <div class="ep watched">
+                <div class="ep-n">✓</div>
+                <div class="ep-info"><div class="t">Ep 2 — The Mansion</div><div class="m">1:18 · free</div></div>
+              </div>
+              <div class="ep">
+                <div class="ep-n">12</div>
+                <div class="ep-info"><div class="t">Ep 12 — The Door</div><div class="m">1:30 · 0:42 LEFT</div></div>
+                <div style="width: 40px; height: 3px; background: var(--line); border-radius: 2px; position: relative;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 42%; background: var(--ember); border-radius: 2px;"></div></div>
+              </div>
+              <div class="ep locked">
+                <div class="ep-n">13</div>
+                <div class="ep-info"><div class="t">Ep 13 — The Deal Breaks</div><div class="m">1:25 · ✦ 18</div></div>
+                <span class="lock">🔒</span>
+              </div>
+              <div class="ep locked">
+                <div class="ep-n">14</div>
+                <div class="ep-info"><div class="t">Ep 14 — The Heir</div><div class="m">1:32 · ✦ 18</div></div>
+                <span class="lock">🔒</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">08 / 16</div>
+        <div class="name">Series detail</div>
+        <div class="desc">Hero, badges, synopsis, CTA, episode list. The in-progress episode gets a progress bar.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-player">
+            <div class="player-bg">💍</div>
+            <div class="player-top">
+              <div class="back-pill">←</div>
+              <div class="ep-counter">EP 13 / 68</div>
+              <div class="back-pill">⋯</div>
+            </div>
+            <div class="player-side">
+              <div class="ic"><span class="e">❤️</span><span>12.4K</span></div>
+              <div class="ic"><span class="e">💬</span><span>843</span></div>
+              <div class="ic"><span class="e">↗</span><span>Share</span></div>
+              <div class="ic"><span class="e">➕</span><span>Save</span></div>
+            </div>
+            <div class="player-ad">📺 Watch ad · +20 ✦</div>
+            <div class="player-swipe">
+              <div class="a">↑</div>
+              <div class="a">↓</div>
+            </div>
+            <div class="player-bottom">
+              <div class="player-progress">
+                <span class="t">0:42</span>
+                <div class="bar"><div class="fill"></div></div>
+                <span class="t">1:25</span>
+              </div>
+              <div class="player-meta">
+                <div class="title">Ep 13 — The Deal Breaks</div>
+                <div class="earn">+50 ✦</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">09 / 16</div>
+        <div class="name">Swipe player</div>
+        <div class="desc">Reels-style full-screen. Heart, comment, share, save. The ad slot is the conversion lever.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SCREENS BAND 4 — Paywall / Wallet / VIP
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-velvet">
+  <div class="eyebrow">05 · The commerce path</div>
+  <h2>Paywall, wallet, and VIP.</h2>
+  <p class="lede">The paywall is a bottom sheet with three honest options — ad, coin, or VIP. The wallet is where the coin counter gets a real home. VIP is its own screen, not a modal.</p>
+  <div class="phones">
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-paywall">
+            <div class="sheet">
+              <div class="handle"></div>
+              <h3>🔒 This episode is locked</h3>
+              <div class="sub">Three ways through. Pick the one that fits your day.</div>
+              <div class="opts">
+                <div class="opt gold">
+                  <div class="ic">📺</div>
+                  <div class="txt"><div class="t">Watch a 30s ad</div><div class="s">+20 ✦ after the ad · FREE</div></div>
+                  <div class="arr">→</div>
+                </div>
+                <div class="opt">
+                  <div class="ic">✦</div>
+                  <div class="txt"><div class="t">Spend 18 coins</div><div class="s">YOUR BALANCE · 1,250</div></div>
+                  <div class="arr">→</div>
+                </div>
+                <div class="opt premium">
+                  <div class="ic">👑</div>
+                  <div class="txt"><div class="t">Go VIP — unlock everything</div><div class="s">$4.99/WEEK · CANCEL ANYTIME</div></div>
+                  <div class="arr">→</div>
+                </div>
+              </div>
+              <div class="maybe">
+                <button class="btn btn-ghost" style="width:100%;">Maybe later</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">10 / 16</div>
+        <div class="name">Paywall sheet</div>
+        <div class="desc">Ad · coin · VIP. Each option carries its own price in mono.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-wallet">
+            <div class="wallet-title">Wallet</div>
+            <div class="balance-card">
+              <div class="lbl">Your balance</div>
+              <div class="amt"><span class="ic">✦</span>1,250</div>
+              <div class="actions">
+                <button class="btn btn-ember btn-sm">Buy coins</button>
+                <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,0.1); color:white; border-color:rgba(255,255,255,0.2);">History</button>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; padding: 0 4px 6px;">
+                <div class="eyebrow">Earn free</div>
+                <span style="font-size: 9px; color: var(--ash); font-family: 'JetBrains Mono', monospace;">4 of 5 done</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <div class="earn-row">
+                  <div class="ic">📺</div>
+                  <div class="info"><div class="t">Watch a rewarded ad</div><div class="s">+20 ✦ · 30s</div></div>
+                  <button class="btn btn-primary btn-sm">Play</button>
+                </div>
+                <div class="earn-row">
+                  <div class="ic">🎁</div>
+                  <div class="info"><div class="t">Daily check-in</div><div class="s">CLAIMED · COMES BACK TOMORROW</div></div>
+                  <button class="btn btn-ghost btn-sm" disabled style="opacity:0.5;">Claimed</button>
+                </div>
+                <div class="earn-row">
+                  <div class="ic">👥</div>
+                  <div class="info"><div class="t">Refer a friend</div><div class="s">+50 ✦ · NO CAP</div></div>
+                  <button class="btn btn-ghost btn-sm">Share</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; padding: 0 4px 6px;">
+                <div class="eyebrow">Coin packs</div>
+                <span style="font-size: 9px; color: var(--ash); font-family: 'JetBrains Mono', monospace;">NGN</span>
+              </div>
+              <div class="coin-pack-grid">
+                <div class="coin-pack"><div class="ic">✦</div><div class="v">1,000</div><div class="p">₦1,000</div></div>
+                <div class="coin-pack featured"><div class="ic">✦</div><div class="v">5,500</div><div class="p">₦5,000</div></div>
+                <div class="coin-pack"><div class="ic">✦</div><div class="v">12,000</div><div class="p">₦10,000</div></div>
+              </div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; padding: 0 4px 6px;">
+                <div class="eyebrow">History</div>
+                <span style="font-size: 9px; color: var(--iris-2);">View all</span>
+              </div>
+              <div class="history-row">
+                <div class="src">Daily check-in</div>
+                <div class="amt plus">+100</div>
+              </div>
+              <div class="history-row">
+                <div class="src">Ep 13 — The Deal Breaks</div>
+                <div class="amt minus">−18</div>
+              </div>
+              <div class="history-row">
+                <div class="src">Rewarded ad</div>
+                <div class="amt plus">+20</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">11 / 16</div>
+        <div class="name">Wallet</div>
+        <div class="desc">Balance card, earn rows, pack grid, ledger. Every action in the app lands here.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-vip">
+            <div class="vip-crown">👑</div>
+            <div class="vip-title">Go VIP</div>
+            <div class="vip-sub">Every episode unlocked. No ads. New drops a week early. Cancel from settings.</div>
+            <div class="vip-plans">
+              <div class="vip-plan">
+                <div class="ic"></div>
+                <div class="info"><div class="t">Weekly</div><div class="s">Cancel anytime</div></div>
+                <div class="p">$4.99</div>
+              </div>
+              <div class="vip-plan featured">
+                <div class="ic"></div>
+                <div class="info"><div class="t">Yearly</div><div class="s">SAVE 62% · 2 MONTHS FREE</div></div>
+                <div class="p">$99</div>
+              </div>
+            </div>
+            <div style="width:100%;">
+              <button class="btn btn-ember btn-lg" style="width:100%;">Continue with yearly</button>
+              <p style="font-size: 9px; color: var(--ash-2); text-align: center; margin-top: 8px;">Secured by Paystack · Stripe · Google Pay</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">12 / 16</div>
+        <div class="name">VIP subscription</div>
+        <div class="desc">Two plans. Yearly is the recommended one — emboldened with an ember border.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     SCREENS BAND 5 — Payment / Me / Settings
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-ink">
+  <div class="eyebrow">06 · Wrapping up</div>
+  <h2>Payment, profile, and the theme picker.</h2>
+  <p class="lede">The last three screens close the loop. Payment is provider-first. Profile is identity + stats. Settings is the only place a power user needs to know we ship six themes.</p>
+  <div class="phones">
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-pay">
+            <div style="display:flex; align-items:center; gap:10px; padding-bottom: 8px;">
+              <div style="width:32px; height:32px; border-radius:50%; background:var(--velvet-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--bone);">←</div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--bone);">Back</div>
+            </div>
+            <div class="pay-head">
+              <div class="lbl">Upgrading to VIP</div>
+              <h3>Choose how to pay</h3>
+            </div>
+            <div class="pay-methods">
+              <div class="pay-method selected">
+                <div class="ic">💳</div>
+                <div class="info"><div class="t">Paystack</div><div class="s">CARDS · BANK · MOBILE MONEY</div></div>
+                <div class="r"></div>
+              </div>
+              <div class="pay-method">
+                <div class="ic">🟣</div>
+                <div class="info"><div class="t">Stripe</div><div class="s">CARDS · APPLE PAY</div></div>
+                <div class="r"></div>
+              </div>
+              <div class="pay-method">
+                <div class="ic">🟢</div>
+                <div class="info"><div class="t">Google Pay</div><div class="s">ONE-TAP CHECKOUT</div></div>
+                <div class="r"></div>
+              </div>
+            </div>
+            <div class="pay-foot">
+              <button class="btn btn-primary btn-lg" style="width:100%;">Pay $99.00</button>
+              <p style="font-size: 9px; color: var(--ash-2); text-align: center; margin-top: 10px; line-height: 1.5;">You can cancel from Settings → Subscription at any time.<br/>We never store your card details.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">13 / 16</div>
+        <div class="name">Payment method</div>
+        <div class="desc">Three providers. The selected one carries an iris border + filled radio.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-me">
+            <div class="me-head">
+              <div class="av">A</div>
+              <div class="info">
+                <div class="n">Amaobi Okafor</div>
+                <div class="e">@amaobi · amaobi@vida.app</div>
+              </div>
+              <div class="pill">VIP</div>
+            </div>
+            <div class="me-stats">
+              <div class="me-stat"><div class="v">47</div><div class="l">Watched</div></div>
+              <div class="me-stat"><div class="v">1,250</div><div class="l">Coins</div></div>
+              <div class="me-stat"><div class="v">12</div><div class="l">Saved</div></div>
+            </div>
+            <div class="menu-list">
+              <div class="menu-item">
+                <div class="ic">✦</div>
+                <div class="t">My coins</div>
+                <div class="badge badge-coin mono">1,250</div>
+                <div class="arr">→</div>
+              </div>
+              <div class="menu-item">
+                <div class="ic">📺</div>
+                <div class="t">Watch history</div>
+                <div class="arr">→</div>
+              </div>
+              <div class="menu-item">
+                <div class="ic">👑</div>
+                <div class="t">VIP subscription</div>
+                <div class="badge badge-vip">ACTIVE</div>
+                <div class="arr">→</div>
+              </div>
+              <div class="menu-item">
+                <div class="ic">🎬</div>
+                <div class="t">My list</div>
+                <div class="arr">→</div>
+              </div>
+              <div class="menu-item">
+                <div class="ic">⚙️</div>
+                <div class="t">Settings</div>
+                <div class="arr">→</div>
+              </div>
+            </div>
+            <div class="menu-list">
+              <div class="menu-item">
+                <div class="ic">🚪</div>
+                <div class="t" style="color: var(--crimson);">Log out</div>
+                <div class="arr">→</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">14 / 16</div>
+        <div class="name">Profile</div>
+        <div class="desc">Identity, 3 stats, then two menu groups separated by spacing.</div>
+      </div>
+    </div>
+
+    <div class="screen-frame">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="screen-settings">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:32px; height:32px; border-radius:50%; background:var(--velvet-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--bone);">←</div>
+              <div style="font-size: 17px; font-weight: 700; color: var(--bone);">Settings</div>
+            </div>
+            <div>
+              <div class="eyebrow" style="margin-bottom: 10px;">Theme</div>
+              <div class="theme-grid">
+                <div class="theme-card on" data-theme-card="dark">
+                  <div class="swatch sw-dark"></div>
+                  <div class="name">Dark</div>
+                </div>
+                <div class="theme-card" data-theme-card="light">
+                  <div class="swatch sw-light"></div>
+                  <div class="name">Light</div>
+                </div>
+                <div class="theme-card" data-theme-card="cupcake">
+                  <div class="swatch sw-cupcake"></div>
+                  <div class="name">Cupcake</div>
+                </div>
+                <div class="theme-card" data-theme-card="cyberpunk">
+                  <div class="swatch sw-cyberpunk"></div>
+                  <div class="name">Cyberpunk</div>
+                </div>
+                <div class="theme-card" data-theme-card="sunset">
+                  <div class="swatch sw-sunset"></div>
+                  <div class="name">Sunset</div>
+                </div>
+                <div class="theme-card" data-theme-card="valentine">
+                  <div class="swatch sw-valentine"></div>
+                  <div class="name">Valentine</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="eyebrow" style="margin-bottom: 10px;">Playback</div>
+              <div class="setting-row"><div class="t">Auto-play next episode</div><div class="toggle on"></div></div>
+              <div class="setting-row"><div class="t">Cellular streaming</div><div class="toggle"></div></div>
+              <div class="setting-row"><div class="t">Default quality</div><div class="s">720p</div></div>
+            </div>
+            <div>
+              <div class="eyebrow" style="margin-bottom: 10px;">Account</div>
+              <div class="setting-row"><div class="t">Change PIN</div><div class="s">→</div></div>
+              <div class="setting-row"><div class="t">Subscription</div><div class="s" style="color: var(--jade);">VIP · until Mar 2026</div></div>
+              <div class="setting-row"><div class="t">Language</div><div class="s">English</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="label">
+        <div class="no">15 / 16</div>
+        <div class="name">Settings</div>
+        <div class="desc">Theme picker up top. Live-switches the entire page on tap.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     WHAT'S DIFFERENT BAND
+     ════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-velvet" id="diff">
+  <div class="eyebrow">07 · What changed</div>
+  <h2>From the v1 spec to this one.</h2>
+  <p class="lede">A redesign isn't a restyle. Here are the deliberate moves.</p>
+  <div class="diff-grid">
+    <div class="diff-col before">
+      <h3>Vida design v1 — what it was</h3>
+      <ul>
+        <li><b>Flat documentation</b>Six pages of horizontal phone rows. The screens sat on a single canvas like museum exhibits.</li>
+        <li><b>Numbered sections</b>01 / 02 / 03 markers for every page. Decoration that didn't encode anything about the order.</li>
+        <li><b>One color palette per theme</b>CSS variables, but a single flat surface tone per theme. Dark was one solid color.</li>
+        <li><b>Single Daily Check-in banner</b>One commitment on the home screen — easy to ignore.</li>
+        <li><b>One horizontal shelf</b>"Trending Now" was the whole catalog. Return users had nothing new to do.</li>
+        <li><b>4 genre chips</b>A token gesture. Real short-drama apps show 8–12.</li>
+        <li><b>Coin cost on cards was missing</b>ReelShort hides the price; we matched them. The user discovers the cost by tapping.</li>
+        <li><b>Sections as a tab nav</b>Click Brand → Components → Themes → Screens. A document, not a product.</li>
+      </ul>
+    </div>
+    <div class="diff-col after">
+      <h3>Cinematic v2 — what it is now</h3>
+      <ul>
+        <li><b>Vertical scroll, not a tab nav</b>The page is the product walk. You scroll through it like a user would.</li>
+        <li><b>Named bands, no numbers</b>"01 · The home screen", "02 · First launch", "03 · Returning users". The numbers are part of the narrative, not decoration.</li>
+        <li><b>Two-tone palette per theme</b>Ink (background) + Velvet (surface) per theme. A real sense of depth.</li>
+        <li><b>2×2 Watch & Earn grid</b>Four small commitments — check-in, ad, refer, spin — beat one big one. Same real estate, more taps.</li>
+        <li><b>Six shelves + Continue Watching</b>Hero → Resume → Trending → Top 10 → Earn → Tropes. Six distinct next-actions in one scroll.</li>
+        <li><b>12 trope chips</b>The real ReelShort number, with hot/new color hints so the catalog feels alive.</li>
+        <li><b>Coin cost visible on every card</b>Bottom-right of every poster. Users learn the price economy before they tap.</li>
+        <li><b>Mono as the signature</b>Every number — coin balances, episode counts, view counts, rank digits — is JetBrains Mono. The user reads numbers as numbers.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     FOOTER
+     ════════════════════════════════════════════════════════════════════════ -->
+<div class="foot">
+  <div class="mark">Vida</div>
+  <p>Cinematic v2. Sixteen screens. One scroll. Six themes. Tokens, components, and the home screen fully built. <br/>Every screen above is HTML — no images, no shortcuts.</p>
+  <div class="c">© 2026 · Vida Dev · Inter & JetBrains Mono</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     INTERACTIVITY — theme switcher
+     ════════════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  const root = document.documentElement;
+  const pips = document.querySelectorAll('[data-theme-set]');
+  const cards = document.querySelectorAll('[data-theme-card]');
+
+  function setTheme(t) {
+    root.setAttribute('data-theme', t);
+    pips.forEach(p => p.setAttribute('data-on', p.getAttribute('data-theme-set') === t ? 'true' : 'false'));
+    cards.forEach(c => c.classList.toggle('on', c.getAttribute('data-theme-card') === t));
+    try { localStorage.setItem('vida-theme', t); } catch (_) {}
+  }
+
+  pips.forEach(p => p.addEventListener('click', () => setTheme(p.getAttribute('data-theme-set'))));
+  cards.forEach(c => c.addEventListener('click', () => setTheme(c.getAttribute('data-theme-card'))));
+
+  let initial = 'dark';
+  try {
+    const saved = localStorage.getItem('vida-theme');
+    if (saved) initial = saved;
+  } catch (_) {}
+  setTheme(initial);
+})();
+</script>
+
+</body>
+</html>

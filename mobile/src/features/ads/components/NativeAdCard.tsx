@@ -61,7 +61,7 @@ export function NativeAdCard({ variant = "grid", style }: NativeAdCardProps) {
     borderWidth: 1,
     borderColor: tokens["--vida-border"],
     overflow: "hidden",
-    ...(isFull ? { height: "100%" } : { aspectRatio: 9 / 16 }),
+    ...(isFull ? { height: "100%" } : { aspectRatio: 2 / 3 }),
     ...style,
   };
 

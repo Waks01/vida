@@ -94,6 +94,8 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> list[str]:
+        if self.environment == "local":
+            return ["*"]
         return self.allowed_origins
 
 

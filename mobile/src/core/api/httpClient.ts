@@ -46,17 +46,35 @@ client.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 
 client.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
-    if (error.response?.status === 401 && original && !original._retry) {
-      original._retry = true;
-      refreshing ??= refreshAccessToken();
+  async (error) => {
+    const axiosError = error as {
+      code?: string;
+      response?: { status?: number; data?: { detail?: string; message?: string } };
+      config?: InternalAxiosRequestConfig & { _retry?: boolean };
+    };
+
+    if (axiosError.code === "ECONNABORTED" || axiosError.code === "ERR_NETWORK" || !axiosError.response) {
+      return Promise.reject(new Error("Network error. Check your connection and try again."));
+    }
+
+    if (axiosError.response.status === 401 && axiosError.config && !axiosError.config._retry) {
+      axiosError.config._retry = true;
+      if (!refreshing) {
+        refreshing = refreshAccessToken();
+      }
       const newToken = await refreshing;
       refreshing = null;
       if (newToken) {
-        original.headers.set("Authorization", `Bearer ${newToken}`);
-        return client(original);
+        axiosError.config.headers.set("Authorization", `Bearer ${newToken}`);
+        return client(axiosError.config);
       }
+    }
+
+    if (axiosError.response.data && axiosError.response.data.detail) {
+      return Promise.reject(new Error(axiosError.response.data.detail as string));
+    }
+    if (axiosError.response.data && axiosError.response.data.message) {
+      return Promise.reject(new Error(axiosError.response.data.message as string));
     }
     return Promise.reject(error);
   }

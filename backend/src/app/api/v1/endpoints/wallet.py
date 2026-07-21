@@ -1,7 +1,10 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import logging
 from fastapi import APIRouter, HTTPException, status
+
+logger = logging.getLogger("vida.wallet")
 from sqlalchemy import func, select
 
 from app.api.deps import CurrentUserDep, SessionDep
@@ -136,6 +139,9 @@ async def daily_checkin(user_id: CurrentUserDep, session: SessionDep):
     try:
         await svc.credit(user_id, settings.daily_checkin_coins, CoinSource.DAILY_CHECKIN)
     except CoinLedgerError as e:
+        logger.warning("checkin failed user=%s error=%s", user_id, e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from None
     await session.commit()
-    return {"awarded": settings.daily_checkin_coins, "balance": await svc.balance(user_id)}
+    balance = await svc.balance(user_id)
+    logger.info("checkin success user=%s awarded=%s balance=%s", user_id, settings.daily_checkin_coins, balance)
+    return {"awarded": settings.daily_checkin_coins, "balance": balance}

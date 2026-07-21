@@ -7,8 +7,8 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import CurrentUserDep, SessionDep
 from app.core.config import get_settings
-from app.core.enums import CoinSource, EpisodeSource
-from app.db.models import AdView, Episode, Series, User
+from app.core.enums import CoinSource, EpisodeSource, SeriesCategory
+from app.db.models import AdView, Episode, EpisodeLike, Series, User, WatchHistory
 from app.schemas import (
     EpisodeStreamResponse,
     EpisodeUnlockRequest,
@@ -30,14 +30,23 @@ def _series_stmt(series_id: UUID):
 
 
 @router.get("/series", response_model=list[SeriesPublic])
-async def list_series(session: SessionDep, limit: int = 20, offset: int = 0):
-    stmt = (
-        select(Series)
-        .options(selectinload(Series.episodes))
-        .order_by(Series.total_views.desc())
-        .limit(limit)
-        .offset(offset)
-    )
+async def list_series(
+    session: SessionDep,
+    limit: int = 20,
+    offset: int = 0,
+    category: SeriesCategory | None = None,
+):
+    """List published series, optionally filtered by a single category.
+
+    `category` is the chip the home is currently showing (e.g. `werewolf`).
+    Unknown values are rejected by FastAPI before reaching the DB. When
+    omitted, the endpoint returns the global top-views feed (preserves
+    existing callers that hit `/content/series` without a filter).
+    """
+    stmt = select(Series).options(selectinload(Series.episodes))
+    if category is not None:
+        stmt = stmt.where(Series.category == category.value)
+    stmt = stmt.order_by(Series.total_views.desc()).limit(limit).offset(offset)
     result = await session.execute(stmt)
     return list(result.scalars().all())
 
@@ -151,17 +160,57 @@ async def unlock_episode(
 
 
 @router.post("/episodes/{episode_id}/watch", response_model=dict)
-async def episode_watch(episode_id: str, user_id: CurrentUserDep, session: SessionDep):
+async def episode_watch(
+    episode_id: str,
+    user_id: CurrentUserDep,
+    session: SessionDep,
+    progress: float = 0.0,
+):
+    """Watch heartbeat.
+
+    Bumps the episode + series view count and (idempotently) upserts a
+    row in `watch_history` for the (user, series) pair so the home's
+    Resume rail reflects the most recent episode the user watched.
+
+    `progress` is 0..1 and is the player's current position within the
+    episode. The Resume card uses it to draw a real progress bar.
+    """
     row = await session.get(Episode, UUID(episode_id))
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
-    # Persist the watch heartbeat: bump the episode view count and keep the
-    # parent series' total_views in sync. Fraud/anti-bot gating is intentionally
-    # lightweight here (auth-gated + per-episode increment).
     row.views = (row.views or 0) + 1
     series = await session.get(Series, row.series_id)
     if series is not None:
         series.total_views = (series.total_views or 0) + 1
+
+    # Upsert WatchHistory (one row per user+series).
+    existing = (
+        await session.execute(
+            select(WatchHistory).where(
+                WatchHistory.user_id == user_id,
+                WatchHistory.series_id == row.series_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is None:
+        session.add(
+            WatchHistory(
+                user_id=user_id,
+                series_id=row.series_id,
+                episode_id=row.id,
+                progress=max(0.0, min(1.0, progress)),
+                last_watched_at=__import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
+            )
+        )
+    else:
+        existing.episode_id = row.id
+        existing.progress = max(0.0, min(1.0, progress))
+        existing.last_watched_at = __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        )
+
     await session.commit()
     return {"ok": True, "views": row.views}
 
@@ -287,3 +336,102 @@ async def episode_stream_webhook(request: Request, session: SessionDep):
         episode.status = "ready"
     await session.commit()
     return {"received": True}
+
+
+@router.post("/episodes/{episode_id}/like", response_model=dict)
+async def like_episode(episode_id: str, user_id: CurrentUserDep, session: SessionDep):
+    """Like an episode. Idempotent — re-liking is a no-op (the unique
+    constraint guarantees only one row per (user, episode) pair).
+    Returns the total like count for the episode.
+    """
+    try:
+        eid = UUID(episode_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid episode id"
+        ) from None
+
+    # Confirm the episode exists.
+    row = await session.get(Episode, eid)
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found"
+        )
+
+    existing = (
+        await session.execute(
+            select(EpisodeLike).where(
+                EpisodeLike.user_id == user_id, EpisodeLike.episode_id == eid
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is None:
+        session.add(EpisodeLike(user_id=user_id, episode_id=eid))
+        await session.commit()
+        liked = True
+    else:
+        liked = True  # already liked; still report true
+
+    count_stmt = select(func.count()).select_from(EpisodeLike).where(
+        EpisodeLike.episode_id == eid
+    )
+    total = int((await session.execute(count_stmt)).scalar_one())
+    return {"liked": liked, "total_likes": total}
+
+
+@router.delete("/episodes/{episode_id}/like", response_model=dict)
+async def unlike_episode(episode_id: str, user_id: CurrentUserDep, session: SessionDep):
+    """Remove the user's like from an episode. 404 when the user
+    hasn't liked the episode."""
+    try:
+        eid = UUID(episode_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid episode id"
+        ) from None
+
+    existing = (
+        await session.execute(
+            select(EpisodeLike).where(
+                EpisodeLike.user_id == user_id, EpisodeLike.episode_id == eid
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Not liked"
+        )
+    await session.delete(existing)
+    await session.commit()
+
+    count_stmt = select(func.count()).select_from(EpisodeLike).where(
+        EpisodeLike.episode_id == eid
+    )
+    total = int((await session.execute(count_stmt)).scalar_one())
+    return {"liked": False, "total_likes": total}
+
+
+@router.get("/episodes/{episode_id}/like", response_model=dict)
+async def get_like(episode_id: str, user_id: CurrentUserDep, session: SessionDep):
+    """Read whether the current user has liked the episode and the
+    total like count. Used by the player's heart button to render the
+    right state on mount."""
+    try:
+        eid = UUID(episode_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid episode id"
+        ) from None
+
+    liked = (
+        await session.execute(
+            select(EpisodeLike.id).where(
+                EpisodeLike.user_id == user_id, EpisodeLike.episode_id == eid
+            )
+        )
+    ).scalar_one_or_none() is not None
+    total_stmt = select(func.count()).select_from(EpisodeLike).where(
+        EpisodeLike.episode_id == eid
+    )
+    total = int((await session.execute(total_stmt)).scalar_one())
+    return {"liked": liked, "total_likes": total}
