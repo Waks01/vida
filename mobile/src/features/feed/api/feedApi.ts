@@ -1,6 +1,6 @@
 import { httpClient } from "../../../core/api/httpClient";
 
-import type { SeriesSummary, WatchHistoryEntry } from "../types";
+import type { SeriesSummary, StreamResolveResponse, WatchHistoryEntry } from "../types";
 
 /** Wraps backend /content endpoints. */
 export const feedApi = {
@@ -23,13 +23,10 @@ export const feedApi = {
     }
   },
 
-  /** Returns a playable HLS URL for an episode. For Cloudflare Stream content
-   * the backend signs a short-lived URL; for external/third-party content it
-   * returns the stored public URL as-is. */
-  async getStreamUrl(episodeId: string): Promise<string | null> {
+  async getStreamUrl(episodeId: string): Promise<StreamResolveResponse | null> {
     try {
       const { data } = await httpClient.get(`/content/episodes/${episodeId}/stream`);
-      return (data as { hls_url?: string | null }).hls_url ?? null;
+      return data as StreamResolveResponse;
     } catch {
       return null;
     }

@@ -11,6 +11,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { WebView } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
@@ -23,7 +24,7 @@ import { VIcon } from "../../../shared/components/VIcon";
 import { useTheme } from "../../../providers/ThemeProvider";
 import { useWallet } from "../../wallet/hooks/useWallet";
 import { feedApi } from "../../feed/api/feedApi";
-import type { EpisodeSummary, SeriesSummary } from "../../feed/types";
+import type { EpisodeSummary, SeriesSummary, StreamResolveResponse } from "../../feed/types";
 
 import { VPlayerTopBar } from "./VPlayerTopBar";
 import { VPlayerProgress } from "./VPlayerProgress";
@@ -35,21 +36,9 @@ import { VCommentSheet } from "./VCommentSheet";
 interface SwipePlayerProps {
   series: SeriesSummary[];
   initialIndex?: number;
-  /**
-   * Coins-path unlock. Resolves to `true` when the backend confirms
-   * the episode is unlocked; throws when the request fails (e.g.
-   * insufficient balance). The player surfaces the error in the
-   * unlock sheet so the user sees *why* it didn't work.
-   */
   onCoinsUnlock?: (episode: EpisodeSummary) => Promise<boolean>;
-  /**
-   * Called when an episode comes into view (and every 15s thereafter
-   * while it's playing). The progress arg is 0..1 within the current
-   * episode — the parent writes it to the backend via
-   * `feedApi.recordWatch(episodeId, progress)`.
-   */
   onEpisodeView?: (episodeId: string, progress: number) => void;
-  resolveUrl?: (episodeId: string) => Promise<string | null>;
+  resolveUrl?: (episodeId: string) => Promise<StreamResolveResponse | null>;
 }
 
 const HEARTBEAT_INTERVAL_MS = 15_000;
@@ -61,14 +50,61 @@ interface EpisodeCardProps {
   seriesTitle: string;
   seriesId: string;
   isUnlocked: boolean;
-  dismissed: boolean;
+  isActive: boolean;
   onUnlock: () => void;
   onCoinsUnlock: (episode: EpisodeSummary) => Promise<boolean>;
-  onDismiss: () => void;
   onWatchHeartbeat: (episodeId: string, progress: number) => void;
-  resolveUrl?: (episodeId: string) => Promise<string | null>;
-  /** Real page height (FlatList container, not window). */
+  resolveUrl?: (episodeId: string) => Promise<StreamResolveResponse | null>;
+  userBalance: number;
   pageHeight: number;
+}
+
+function YTEmbed({ videoId }: { videoId: string }) {
+  if (typeof WebView === "undefined") {
+    return (
+      <View style={{ width: "100%", height: "100%", backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: "#fff" }}>YouTube playback requires app rebuild</Text>
+      </View>
+    );
+  }
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh">
+    <iframe
+      src="https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&modestbranding=1&rel=0"
+      style="width:100%;height:100%;border:0"
+      allow="autoplay; fullscreen"
+      allowfullscreen
+    ></iframe>
+    </body>
+    </html>
+  `;
+  return <WebView source={{ html }} allowsFullscreenVideo mediaPlaybackRequiresUserAction={false} />;
+}
+
+function VimeoEmbed({ videoId }: { videoId: string }) {
+  if (typeof WebView === "undefined") {
+    return (
+      <View style={{ width: "100%", height: "100%", backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: "#fff" }}>Vimeo playback requires app rebuild</Text>
+      </View>
+    );
+  }
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh">
+    <iframe
+      src="https://player.vimeo.com/video/${videoId}?playsinline=1&autoplay=1"
+      style="width:100%;height:100%;border:0"
+      allow="autoplay; fullscreen"
+      allowfullscreen
+    ></iframe>
+    </body>
+    </html>
+  `;
+  return <WebView source={{ html }} allowsFullscreenVideo mediaPlaybackRequiresUserAction={false} />;
 }
 
 function EpisodeCard({
@@ -77,32 +113,48 @@ function EpisodeCard({
   seriesTitle,
   seriesId,
   isUnlocked,
-  dismissed,
+  isActive,
   onUnlock,
   onCoinsUnlock,
-  onDismiss,
   onWatchHeartbeat,
   resolveUrl,
+  userBalance,
   pageHeight,
 }: EpisodeCardProps) {
   const { tokens } = useTheme();
-  const { balance } = useWallet();
-  const safeBalance = typeof balance === "number" ? balance : 0;
-  const [playUrl, setPlayUrl] = useState<string | null>(null);
+  const [stream, setStream] = useState<StreamResolveResponse | null>(null);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [coinsBusy, setCoinsBusy] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [attemptedAutoUnlock, setAttemptedAutoUnlock] = useState(false);
   const { watchAd, isLoading: isAdLoading } = useAdReward();
 
-  // Show the unlock sheet on first visit when locked and not yet dismissed.
-  const [showSheet, setShowSheet] = useState(!isUnlocked && !dismissed);
+  const isHls = stream?.kind === "hls";
+  const isYt = stream?.kind === "youtube";
+  const isVm = stream?.kind === "vimeo";
+  const hasContent = !!stream && stream.kind !== "unknown";
+  const canHlsPlay = isHls && !!stream.hls_url;
+  const safeBalance = typeof userBalance === "number" ? userBalance : 0;
+  const isFree = !episode.is_premium || episode.coin_cost === 0;
 
-  // Read the current like state on mount (and re-read when the
-  // episode changes). The user expects the heart to be filled in if
-  // they already liked the episode on a previous visit.
+  const hlsPlayer = useVideoPlayer(canHlsPlay ? (stream.hls_url ?? "") : "");
+
+  useEffect(() => {
+    setPlaying(false);
+    setShowModal(false);
+    setAttemptedAutoUnlock(false);
+    setStream(null);
+  }, [episode.id]);
+
+  useEffect(() => {
+    const sub = hlsPlayer.addListener("playingChange", ({ isPlaying: p }) => setPlaying(p));
+    return () => sub.remove();
+  }, [hlsPlayer]);
+
   useEffect(() => {
     let cancelled = false;
     feedApi
@@ -113,41 +165,80 @@ function EpisodeCard({
   }, [episode.id]);
 
   useEffect(() => {
-    if (!isUnlocked || !resolveUrl || playUrl) return;
+    if (!isActive || !resolveUrl || stream) return;
     let cancelled = false;
     resolveUrl(episode.id)
-      .then((url) => { if (!cancelled) setPlayUrl(url); })
-      .catch(() => { if (!cancelled) setPlayUrl(null); });
+      .then((r) => { if (!cancelled) setStream(r); })
+      .catch(() => { if (!cancelled) setStream(null); });
     return () => { cancelled = true; };
-  }, [isUnlocked, resolveUrl, playUrl, episode.id]);
+  }, [isActive, resolveUrl, stream, episode.id]);
 
-  const player = useVideoPlayer(playUrl ?? "", (p) => {
-    p.loop = true;
-  });
+  const attemptPlay = useCallback(async () => {
+    if (!hasContent) return;
+    if (isUnlocked || isFree) {
+      if (canHlsPlay) {
+        if (playing) { hlsPlayer.pause(); } else { hlsPlayer.play(); }
+      }
+      return;
+    }
+    if (isFree) return;
+    if (safeBalance >= episode.coin_cost && !attemptedAutoUnlock) {
+      setAttemptedAutoUnlock(true);
+      try {
+        const ok = await onCoinsUnlock(episode);
+        if (ok) {
+          onUnlock();
+          setShowModal(false);
+          if (canHlsPlay) {
+            hlsPlayer.play();
+          }
+        } else {
+          setShowModal(true);
+        }
+      } catch {
+        setShowModal(true);
+      }
+    } else if (!attemptedAutoUnlock) {
+      setShowModal(true);
+    }
+  }, [isUnlocked, isFree, safeBalance, episode.coin_cost, onCoinsUnlock, onUnlock, canHlsPlay, hlsPlayer, playing, attemptedAutoUnlock, hasContent]);
 
   useEffect(() => {
-    const sub = player.addListener("playingChange", ({ isPlaying }) => setPlaying(isPlaying));
-    return () => sub.remove();
-  }, [player]);
+    if (!isActive || !hasContent) return;
+    if (isUnlocked || isFree) {
+      if (isHls && canHlsPlay) {
+        hlsPlayer.play();
+      }
+    } else if (!attemptedAutoUnlock && safeBalance >= episode.coin_cost) {
+      attemptPlay();
+    } else if (!attemptedAutoUnlock && safeBalance < episode.coin_cost && isActive) {
+      setShowModal(true);
+    }
+  }, [hasContent, isUnlocked, isFree, isActive, attemptPlay, canHlsPlay, hlsPlayer, attemptedAutoUnlock, safeBalance, episode.coin_cost]);
 
   useEffect(() => {
-    if (!isUnlocked || !playUrl) return;
+    if (!canHlsPlay || !isUnlocked) return;
     const timer = setInterval(() => {
-      const d = player.duration > 0 ? player.duration : episode.duration_seconds;
-      const progress = d > 0 ? player.currentTime / d : 0;
+      const d = hlsPlayer.duration > 0 ? hlsPlayer.duration : episode.duration_seconds;
+      const progress = d > 0 ? hlsPlayer.currentTime / d : 0;
       onWatchHeartbeat(episode.id, progress);
     }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [isUnlocked, playUrl, episode.id, episode.duration_seconds, onWatchHeartbeat, player]);
+  }, [canHlsPlay, isUnlocked, episode.id, episode.duration_seconds, onWatchHeartbeat, hlsPlayer]);
 
-  const handlePlayToggle = () => {
-    if (playing) { player.pause(); } else { player.play(); }
-  };
+  const _handlePlayToggle = useCallback(() => {
+    if (!canHlsPlay) return;
+    if (playing) { hlsPlayer.pause(); } else { hlsPlayer.play(); }
+  }, [canHlsPlay, playing, hlsPlayer]);
+
+  const handleAreaTap = useCallback(async () => {
+    if (!hasContent) return;
+    await attemptPlay();
+  }, [hasContent, attemptPlay]);
 
   const handleLikeToggle = useCallback(async () => {
     if (likeBusy) return;
     setLikeBusy(true);
-    // Optimistic flip; revert on failure.
     const next = !liked;
     setLiked(next);
     try {
@@ -157,9 +248,6 @@ function EpisodeCard({
         await feedApi.unlikeEpisode(episode.id);
       }
     } catch {
-      // Revert the optimistic flip; surface no toast because likes
-      // are not critical and the heart icon going back is its own
-      // feedback.
       setLiked(!next);
     } finally {
       setLikeBusy(false);
@@ -171,11 +259,14 @@ function EpisodeCard({
     const result = await watchAd();
     if (result) {
       onUnlock();
-      setShowSheet(false);
+      setShowModal(false);
+      if (canHlsPlay) {
+        hlsPlayer.play();
+      }
     } else {
       setUnlockError("Ad didn't complete. Please try again.");
     }
-  }, [watchAd, onUnlock]);
+  }, [watchAd, onUnlock, canHlsPlay, hlsPlayer]);
 
   const handleCoinsUnlock = useCallback(async () => {
     setUnlockError(null);
@@ -184,7 +275,10 @@ function EpisodeCard({
       const ok = await onCoinsUnlock(episode);
       if (ok) {
         onUnlock();
-        setShowSheet(false);
+        setShowModal(false);
+        if (canHlsPlay) {
+          hlsPlayer.play();
+        }
       } else {
         setUnlockError("Could not unlock this episode. Please try again.");
       }
@@ -194,13 +288,12 @@ function EpisodeCard({
     } finally {
       setCoinsBusy(false);
     }
-  }, [onCoinsUnlock, episode, onUnlock]);
+  }, [onCoinsUnlock, episode, onUnlock, canHlsPlay, hlsPlayer]);
 
-  const handleDismiss = useCallback(() => {
-    setShowSheet(false);
+  const handleDismissModal = useCallback(() => {
+    setShowModal(false);
     setUnlockError(null);
-    onDismiss();
-  }, [onDismiss]);
+  }, []);
 
   const handleReport = useCallback(() => {
     Alert.alert(
@@ -212,10 +305,6 @@ function EpisodeCard({
           text: "Report",
           style: "destructive",
           onPress: () => {
-            // Best-effort log so the user sees the action registered.
-            // A real report endpoint is intentionally not in scope here
-            // — the team curates content via Cloudflare Stream meta
-            // and the admin tool, not user reports.
             console.warn("[report]", { episode_id: episode.id });
           },
         },
@@ -223,7 +312,7 @@ function EpisodeCard({
     );
   }, [episode.id]);
 
-  if (!playUrl && isUnlocked) {
+  if (!hasContent && isUnlocked) {
     return (
       <View style={{ height: pageHeight, backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={tokens["--vida-primary"]} />
@@ -232,18 +321,30 @@ function EpisodeCard({
     );
   }
 
-  const isFree = !episode.is_premium || episode.coin_cost === 0;
+  const showSheet = showModal && !isUnlocked;
 
   return (
     <View style={{ height: pageHeight, backgroundColor: "#000", overflow: "hidden" }}>
-      {/* Video or locked placeholder */}
-      {playUrl && isUnlocked ? (
-        <VideoView
-          player={player}
-          style={{ width: "100%", height: "100%" }}
-          contentFit="cover"
-          nativeControls={false}
-        />
+      {hasContent ? (
+        <>
+          {isHls && stream.hls_url ? (
+            <VideoView
+              player={hlsPlayer}
+              style={{ width: "100%", height: "100%" }}
+              contentFit="cover"
+              nativeControls={false}
+            />
+          ) : isYt && stream.youtube_key ? (
+            <YTEmbed videoId={stream.youtube_key} />
+          ) : isVm && stream.vimeo_key ? (
+            <VimeoEmbed videoId={stream.vimeo_key} />
+          ) : (
+            <View style={{ width: "100%", height: "100%", backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: tokens["--vida-text-muted"] }}>No playable source</Text>
+            </View>
+          )}
+          <Pressable onPress={handleAreaTap} style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }} />
+        </>
       ) : (
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
           {episode.thumbnail_url ? (
@@ -272,53 +373,6 @@ function EpisodeCard({
         </View>
       )}
 
-      {/* Play/pause hit area. Uses `onStartShouldSetResponder`
-          returning `false` so the gesture system never claims the
-          touch — the parent ScrollView always gets the pan gesture
-          and can complete its swipe. We still register `onResponderRelease`
-          so a *tap* (no movement) is detected and counted as a play
-          toggle. The 8px movement threshold filters accidental
-          movement from a long-press. */}
-      {!showSheet ? (
-        <View
-          onStartShouldSetResponder={() => false}
-          onMoveShouldSetResponder={() => false}
-          onResponderTerminationRequest={() => true}
-          onStartShouldSetResponderCapture={() => false}
-          style={{
-            position: "absolute",
-            top: 80,
-            bottom: 180,
-            left: 0,
-            right: 0,
-          }}
-        >
-          <Pressable
-            onPress={handlePlayToggle}
-            hitSlop={4}
-            style={{ flex: 1 }}
-          />
-        </View>
-      ) : null}
-
-      {/* Big play indicator when paused */}
-      {!showSheet && isUnlocked && !playing ? (
-        <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
-              backgroundColor: "rgba(0,0,0,0.55)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <VIcon name="play" size={36} color="#fff" />
-          </View>
-        </View>
-      ) : null}
-
       <VPlayerTopBar
         episodeNumber={episode.episode_number}
         totalEpisodes={seriesEpisodeCount}
@@ -345,8 +399,8 @@ function EpisodeCard({
           backgroundColor: "rgba(0,0,0,0.85)",
         }}
       >
-        {playUrl && isUnlocked ? (
-          <VPlayerProgress player={player} fallbackDurationSeconds={episode.duration_seconds} />
+        {isHls && isUnlocked ? (
+          <VPlayerProgress player={hlsPlayer} fallbackDurationSeconds={episode.duration_seconds} />
         ) : null}
 
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingBottom: 16 }}>
@@ -397,7 +451,7 @@ function EpisodeCard({
         errorMessage={unlockError}
         onWatchAd={handleAdUnlock}
         onUseCoins={handleCoinsUnlock}
-        onDismiss={handleDismiss}
+        onDismiss={handleDismissModal}
       />
 
       <VCommentSheet
@@ -413,23 +467,20 @@ function EpisodeCard({
 export function VSwipePlayer({ series, initialIndex = 0, onCoinsUnlock, onEpisodeView, resolveUrl }: SwipePlayerProps) {
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
+  const { balance } = useWallet();
+  const safeBalance = typeof balance === "number" ? balance : 0;
   const episodes = useMemo(() => series.flatMap((s) => s.episodes), [series]);
   const totalEpisodes = useMemo(
     () => series.reduce((acc, s) => acc + s.episodes.length, 0),
     [series],
   );
-  // Title of the series for the action row share text.
   const seriesTitle = series[0]?.title ?? "Vida";
-  // Map episode.id -> owning seriesId. Used for share deep-links
-  // (`https://vida.app/s/{seriesId}/e/{episodeId}`) and for any
-  // future per-episode navigation that needs the parent series.
   const seriesIdByEpisode = useMemo(() => {
     const m = new Map<string, string>();
     for (const s of series) for (const e of s.episodes) m.set(e.id, s.id);
     return m;
   }, [series]);
   const [unlocked, setUnlocked] = useState<Set<string>>(new Set());
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [pageHeight, setPageHeight] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -453,7 +504,6 @@ export function VSwipePlayer({ series, initialIndex = 0, onCoinsUnlock, onEpisod
   const handleCoinsUnlockLocal = useCallback(
     async (ep: EpisodeSummary): Promise<boolean> => {
       if (!onCoinsUnlock) {
-        // No backend handler — fall back to optimistic unlock.
         setUnlocked((prev) => new Set(prev).add(ep.id));
         return true;
       }
@@ -462,10 +512,6 @@ export function VSwipePlayer({ series, initialIndex = 0, onCoinsUnlock, onEpisod
     [onCoinsUnlock],
   );
 
-  const handleDismiss = useCallback((episodeId: string) => {
-    setDismissed((prev) => new Set(prev).add(episodeId));
-  }, []);
-
   const handleHeartbeat = useCallback(
     (episodeId: string, progress: number) => {
       onEpisodeView?.(episodeId, progress);
@@ -473,8 +519,6 @@ export function VSwipePlayer({ series, initialIndex = 0, onCoinsUnlock, onEpisod
     [onEpisodeView],
   );
 
-  // Track which page is currently visible. We use this to fire the
-  // initial view-heartbeat once per page.
   const lastReportedIndexRef = useRef<number>(-1);
   const onMomentumScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -491,9 +535,6 @@ export function VSwipePlayer({ series, initialIndex = 0, onCoinsUnlock, onEpisod
     [pageHeight, deck, onEpisodeView],
   );
 
-  // After the page height is measured AND the initial index is past 0,
-  // scroll to it. We have to wait for the layout pass to complete or
-  // the ScrollView's contentSize is still 0 and the scroll is a no-op.
   useEffect(() => {
     if (pageHeight <= 0 || initialIndex <= 0) return;
     const t = setTimeout(() => {
@@ -540,15 +581,9 @@ export function VSwipePlayer({ series, initialIndex = 0, onCoinsUnlock, onEpisod
           pagingEnabled
           showsVerticalScrollIndicator={false}
           decelerationRate="fast"
-          // Each deck item is exactly `pageHeight` tall, so snapping
-          // to `pageHeight` intervals gives a TikTok-style swiped-up
-          // page change.
           snapToInterval={pageHeight}
           snapToAlignment="start"
           onMomentumScrollEnd={onMomentumScrollEnd}
-          // Disable scroll while the unlock sheet is on the active
-          // card so the user can't swipe past a paywall by mistake.
-          // The sheet has a tap-to-dismiss scrim that re-enables it.
           scrollEnabled={currentIndex >= 0}
         >
           {deck.map((item, idx) =>
@@ -564,13 +599,13 @@ export function VSwipePlayer({ series, initialIndex = 0, onCoinsUnlock, onEpisod
                 seriesTitle={seriesTitle}
                 seriesId={seriesIdByEpisode.get(item.value.id) ?? ""}
                 isUnlocked={!item.value.is_premium || unlocked.has(item.value.id)}
-                dismissed={dismissed.has(item.value.id)}
                 onUnlock={() => handleUnlock(item.value)}
                 onCoinsUnlock={handleCoinsUnlockLocal}
-                onDismiss={() => handleDismiss(item.value.id)}
                 onWatchHeartbeat={handleHeartbeat}
                 resolveUrl={resolveUrl}
+                userBalance={safeBalance}
                 pageHeight={pageHeight}
+                isActive={idx === currentIndex}
               />
             ),
           )}

@@ -9,6 +9,8 @@ export interface EpisodeSummary {
   coin_cost: number;
   source: string;
   status: string;
+  video_key: string | null;
+  video_site: string | null;
 }
 
 export interface SeriesSummary {
@@ -20,6 +22,15 @@ export interface SeriesSummary {
   category?: string | null;
   total_views: number;
   episodes: EpisodeSummary[];
+}
+
+export interface StreamResolveResponse {
+  episode_id: string;
+  kind: "hls" | "youtube" | "vimeo" | "unknown";
+  hls_url: string | null;
+  expires_in_seconds: number;
+  youtube_key: string | null;
+  vimeo_key: string | null;
 }
 
 /**

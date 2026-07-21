@@ -33,6 +33,8 @@ export interface EpisodeSummary {
   is_premium: boolean;
   coin_cost: number;
   status: string;
+  video_key: string | null;
+  video_site: string | null;
 }
 
 export interface CreateSeriesPayload {

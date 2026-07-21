@@ -27,6 +27,7 @@ import {
   type SeriesCategory,
 } from "../../../src/features/feed/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { Routes } from "../../../src/shared/constants/routes";
 
 /**
  * Split a series title into a deliberate 2-line break, matching the design
@@ -116,36 +117,9 @@ export default function HomeScreen() {
   const sectionRefs = useRef<Record<string, View | null>>({});
   const scrollToCategory = useCallback(
     (key: SeriesCategory) => {
-      const node = sectionRefs.current[key];
-      const sv = outerScrollRef.current;
-      if (!node || !sv) return;
-      const nodeAny = node as any;
-      const svAny = sv as any;
-      // Resolve node y then ScrollView y, then scroll to the delta.
-      // measure callbacks are called in registration order; we measure
-      // the ScrollView first (cheap), then the node.
-      const measureNode = () =>
-        new Promise<number>((resolve) => {
-          nodeAny.measure?.(
-            (_x: number, _y: number, _w: number, _h: number, _px: number, py: number) =>
-              resolve(py),
-          );
-        });
-      const measureSv = () =>
-        new Promise<number>((resolve) => {
-          svAny.measure?.(
-            (_x: number, _y: number, _w: number, _h: number, _px: number, py: number) =>
-              resolve(py),
-          );
-        });
-      void Promise.all([measureSv(), measureNode()]).then(([svY, nodeY]) => {
-        const target = Math.max(0, nodeY - svY - 12);
-        svAny.scrollTo({ y: target, animated: true });
-      });
-      // Invalidate the category so the rail re-fetches if stale.
-      qc.invalidateQueries({ queryKey: queryKeys.categoryFeed(key) });
+      router.push({ pathname: Routes.category(key) as any, params: { key } });
     },
-    [qc],
+    [router],
   );
 
   // Hero slides — top 3 by views. The thumbnail is the dominant visual;
@@ -396,7 +370,7 @@ export default function HomeScreen() {
           </>
         ) : null}
 
-        {/* One rail per category — each fetches its own slice. ----------- */}
+        {/* One rail per category — each fetches its own slice. */}
         {allCategories.map((c) => (
           <View
             key={c.key}
@@ -404,7 +378,11 @@ export default function HomeScreen() {
               sectionRefs.current[c.key] = node;
             }}
           >
-            <VShelfHeader eyebrow="Browse" title={c.label} />
+            <VShelfHeader
+              eyebrow="Browse"
+              title={c.label}
+              seeAllHref={`/(authenticated)/(tabs)/category/${c.key}`}
+            />
             <CategoryRail category={c.key} limit={8} onPress={navigateToSeries} />
           </View>
         ))}

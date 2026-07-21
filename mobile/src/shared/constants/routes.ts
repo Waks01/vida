@@ -7,6 +7,7 @@ export const Routes = {
   pinLogin: "/pin-login",
   home: "/(tabs)",
   search: "/(tabs)/search",
+  category: (key: string) => `/(authenticated)/(tabs)/category/${key}`,
   wallet: "/(tabs)/wallet",
   profile: "/(tabs)/profile",
   seriesDetail: (id: string) => `/series/${id}`,
