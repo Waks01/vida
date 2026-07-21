@@ -80,6 +80,8 @@ class EpisodePublic(BaseModel):
     coin_cost: int = 25
     source: EpisodeSource = EpisodeSource.STREAM
     status: EpisodeStatus
+    video_key: str | None = None
+    video_site: str | None = None
 
     @field_validator("thumbnail_url", mode="before")
     @classmethod
@@ -91,7 +93,8 @@ class EpisodeImportRequest(BaseModel):
     """Import a third-party (external) episode into a series.
 
     The video is hosted off-Cloudflare (external CDN / licensed content);
-    we store its public HLS/MP4 URL and serve it as-is on playback.
+    we store its public HLS/MP4 URL and serve it as-is on playback, or
+    a YouTube/Vimeo key for embed playback.
     """
 
     series_id: UUID
@@ -103,6 +106,8 @@ class EpisodeImportRequest(BaseModel):
     is_premium: bool = True
     coin_cost: int = 25
     status: EpisodeStatus = EpisodeStatus.PUBLISHED
+    video_key: str | None = Field(default=None, max_length=255)
+    video_site: str | None = Field(default=None, max_length=50)
 
 
 class SeriesPublic(BaseModel):
@@ -247,8 +252,11 @@ class AdUnlockEpisodeRequest(BaseModel):
 
 class EpisodeStreamResponse(BaseModel):
     episode_id: str
-    hls_url: str
+    kind: str = "hls"
+    hls_url: str | None = None
     expires_in_seconds: int = 3600
+    youtube_key: str | None = None
+    vimeo_key: str | None = None
 
 
 class UnlockResponse(BaseModel):

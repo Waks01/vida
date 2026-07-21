@@ -112,6 +112,8 @@ class Episode(Base):
     hls_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     stream_uid: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    video_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    video_site: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     source: Mapped[str] = mapped_column(
         SQLEnum(EpisodeSource, name="episode_source"),
         nullable=False,

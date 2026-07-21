@@ -1,46 +1,14 @@
 """Bulk-seed Series + Episodes from the public TVMaze catalog.
 
-TVMaze's `https://api.tvmaze.com/shows` endpoint is unauthenticated and
-free (no API key, no signup, no domain). It returns ~250 western scripted
-shows per page with posters, genres, and summaries — perfect for a
-realistic-looking home feed during local dev.
-
-What this script does:
-
-  1. Fetches N pages of /shows (default 2 pages ≈ 500 shows; cap at 8
-     so the script finishes in a couple of minutes even on slow networks).
-  2. Filters out shows without a poster and without a network (so the
-     feed reads as real content, not stubs).
-  3. For each show, upserts a Series row (matched by title) with:
-       - title, description, thumbnail_url, category, total_views
-     `category` is round-robined across the SeriesCategory enum so every
-     chip on the home returns non-empty results.
-     `total_views` is a deterministic hash of the show id so the home
-     shelves sort consistently across re-runs.
-  4. Attaches 1-3 Episodes to each new series, pointing at the same
-     public HLS test streams used by the original seed.py. Re-runs are
-     idempotent: existing Series rows get their thumbnails backfilled
-     and missing Episodes are added; nothing is duplicated.
-
-Re-run safety: matched on Series.title (TVMaze titles are unique enough
-for a dev seed). Episodes are matched on (series_id, episode_number)
-and skipped if they exist.
-
-Usage:
-    cd backend
-    uv run python scripts/seed_tvmaze.py            # default: 2 pages (~500 shows)
-    uv run python scripts/seed_tvmaze.py --pages 1  # ~250 shows
-    uv run python scripts/seed_tvmaze.py --pages 8  # ~2000 shows, ~2-3 min
-
-TVMaze rate limit is ~20 req/10s. We sleep 0.6s between pages to stay
-well under it. No auth, no env vars required beyond DATABASE_URL.
+Each series is populated from TMDB's `/videos` endpoint using the
+show's IMDB ID (obtained from TVMaze). Episodes point ONLY to YouTube /
+Vimeo TMDB clips. Series that have no TMDB videos are skipped entirely;
+this is a dev-only sandbox after cleanup.
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
-import hashlib
-import sys
 from html.parser import HTMLParser
 from uuid import uuid4
 
@@ -51,36 +19,13 @@ from sqlalchemy import select
 from app.core.config import get_settings
 from app.core.enums import EpisodeSource, EpisodeStatus, SeriesCategory, SeriesStatus
 from app.db.models import Base, Episode, Series, User
-from app.db.session import AsyncSessionLocal, engine as async_engine
+from app.db.session import AsyncSessionLocal
+from app.db.session import engine as async_engine
 
-# Reuse the test streams from the original seed so existing playback
-# works without bringing up Cloudflare Stream.
-PUBLIC_HLS_URLS: list[tuple[str, str, int]] = [
-    ("Big Buck Bunny (Mux)", "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", 120),
-    ("Apple BipBop", "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8", 60),
-    ("Tears of Steel", "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8", 180),
-    ("Sintel", "https://bitdash-a.akamaihd.com/content/sintel/hls/playlist.m3u8", 150),
-    # Akamai Live has no known runtime — fall back to 600s (10 min) so
-    # the player's progress bar and the detail page's duration label
-    # have a real value to display.
-    ("Akamai Live", "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8", 600),
-]
-
-# Cap on the number of episodes we attach to any one series. The Mux
-# streams we point at are a small fixed list, so 3 episodes already
-# cycles them all — no point attaching more.
 MAX_EPISODES_PER_SERIES = 3
-
-# Test user owns every seeded series (the original seed creates this
-# account; we reuse it so creator_id is always valid).
 TEST_USER_EMAIL = "test@vida.app"
-
-# The free TVMaze endpoint — no key, no auth.
 TVMAZE_SHOWS_URL = "https://api.tvmaze.com/shows"
-PAGE_DELAY_SECONDS = 0.6  # stay under 20 req / 10s
-
-# All values of SeriesCategory — iterated in declaration order so the
-# first N shows fill the editorial/format/origin chips, then tropes.
+PAGE_DELAY_SECONDS = 0.6
 CATEGORY_KEYS: list[str] = [c.value for c in SeriesCategory]
 
 
@@ -248,16 +193,45 @@ async def upsert_series(
     return series, True
 
 
+async def fetch_tmdb_videos(client: httpx.AsyncClient, tmdb_id: int) -> list[dict]:
+    """Return TMDB trailer/TEASER/BTS clips for a show, normalized to
+    (key, site, name) tuples. Returns [] on any failure."""
+    api_key = getattr(get_settings(), "tmdb_api_key", "")
+    if not api_key:
+        return []
+    try:
+        resp = await client.get(
+            f"https://api.themoviedb.org/3/tv/{tmdb_id}/videos",
+            params={"api_key": api_key},
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return [
+            {
+                "key": v.get("key", ""),
+                "site": v.get("site", ""),
+                "name": v.get("name", ""),
+            }
+            for v in data.get("results", [])
+            if v.get("site", "").lower() in {"youtube", "vimeo"}
+        ]
+    except Exception:
+        return []
+
+
 async def attach_episodes(
     session,
     *,
     series: Series,
-    show: dict,
+    videos: list[dict],
 ) -> int:
-    """Attach 1..MAX_EPISODES_PER_SERIES episodes. Re-runs are
-    idempotent (matched on series_id + episode_number)."""
-    show_id = int(show.get("id") or 0)
-    target = episode_count_for(show_id)
+    """Attach up to `MAX_EPISODES_PER_SERIES` from TMDB clips.
+
+    `videos` must already be filtered to YouTube/Vimeo results from TMDB.
+    If it is empty, the series is skipped entirely in the caller.
+    """
+    target = min(len(videos), MAX_EPISODES_PER_SERIES)
 
     existing = (
         await session.execute(
@@ -267,33 +241,27 @@ async def attach_episodes(
     if len(existing) >= target:
         return 0
 
-    # Hash the show_id into a starting offset so two shows never share
-    # the same Mux stream in the same position — visually varied.
-    offset = stable_hash_int("offset", show_id) % len(PUBLIC_HLS_URLS)
-
     added = 0
     for i in range(target):
         ep_number = i + 1
         if any(e.episode_number == ep_number for e in existing):
             continue
-        stream = PUBLIC_HLS_URLS[(offset + i) % len(PUBLIC_HLS_URLS)]
-        name, url, duration = stream
-        # First episode per series is the free preview so the user
-        # can play it without hitting the unlock sheet; subsequent
-        # episodes are premium and cost 20 coins.
         is_free_episode = ep_number == 1
+        v = videos[i]
         ep = Episode(
             id=uuid4(),
             series_id=series.id,
             episode_number=ep_number,
-            title=f"EP {ep_number} · {name}",
-            hls_url=url,
+            title=v.get("name") or f"EP {ep_number}",
+            hls_url=None,
             thumbnail_url=series.thumbnail_url,
-            duration_seconds=duration,
+            duration_seconds=90,
             is_premium=not is_free_episode,
             coin_cost=0 if is_free_episode else 20,
             source=EpisodeSource.EXTERNAL.value,
             status=EpisodeStatus.PUBLISHED.value,
+            video_key=v.get("key"),
+            video_site=(v.get("site") or "").lower() or None,
         )
         session.add(ep)
         added += 1
@@ -340,6 +308,10 @@ async def run(pages: int) -> None:
                 page_eps = 0
                 for show in shows:
                     fetched += 1
+                    tmdb_videos = []
+                    tmdb_id = (show.get("externals") or {}).get("tmdb")
+                    if tmdb_id:
+                        tmdb_videos = await fetch_tmdb_videos(client, tmdb_id)
                     try:
                         series, was_created = await upsert_series(session, user=user, show=show)
                     except Exception as e:
@@ -354,7 +326,7 @@ async def run(pages: int) -> None:
                         page_inserted += 1
                     else:
                         page_backfilled += 1
-                    page_eps += await attach_episodes(session, series=series, show=show)
+                    page_eps += await attach_episodes(session, series=series, show=show, tmdb_videos=tmdb_videos)
 
                 await session.commit()
                 series_inserted += page_inserted

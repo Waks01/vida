@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     googlepay_merchant_id: str = ""
     paystack_customer_email: str = ""  # fallback customer email if user email unavailable
 
+    # ─── Third-party content sources ───
+    tmdb_api_key: str = ""
+
     # ─── Media (Cloudflare R2 + Stream) ───
     r2_account_id: str = ""
     r2_access_key: str = ""

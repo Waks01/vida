@@ -88,15 +88,31 @@ async def episode_stream(episode_id: str, user_id: CurrentUserDep, session: Sess
     row = await session.get(Episode, UUID(episode_id))
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
-    hls_url = row.hls_url or ""
-    if row.source == EpisodeSource.EXTERNAL:
-        # Third-party content: hls_url is an external/public CDN URL, returned as-is.
+
+    if row.video_site == "youtube" and row.video_key:
         return EpisodeStreamResponse(
             episode_id=episode_id,
+            kind="youtube",
+            youtube_key=row.video_key,
+            expires_in_seconds=3600,
+        )
+    if row.video_site == "vimeo" and row.video_key:
+        return EpisodeStreamResponse(
+            episode_id=episode_id,
+            kind="vimeo",
+            vimeo_key=row.video_key,
+            expires_in_seconds=3600,
+        )
+
+    hls_url = row.hls_url or ""
+    if row.source == EpisodeSource.EXTERNAL:
+        return EpisodeStreamResponse(
+            episode_id=episode_id,
+            kind="hls" if hls_url else "unknown",
             hls_url=hls_url,
             expires_in_seconds=0,
         )
-    # Cloudflare Stream content: sign a short-lived HLS URL.
+
     stream_service = CloudflareStreamService()
     if row.stream_uid and hls_url:
         try:
@@ -105,6 +121,7 @@ async def episode_stream(episode_id: str, user_id: CurrentUserDep, session: Sess
             pass
     return EpisodeStreamResponse(
         episode_id=episode_id,
+        kind="hls",
         hls_url=hls_url,
         expires_in_seconds=3600,
     )
